@@ -1,0 +1,5 @@
+package AnalizadorLexico;
+
+enum TokenType {
+    
+}

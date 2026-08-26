@@ -1,9 +1,7 @@
 package AnalizadorLexico;
 
-
 class Token {
-
-    public Token(String string, String lexema, Throwable nroLinea) {
+    public Token(TokenType tokenType, String lexema, Integer nroLinea) {
         //TODO Auto-generated constructor stub
     }
   
