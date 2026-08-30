@@ -1,4 +1,5 @@
 package AnalizadorLexico;
+
 import sourcemanager.*;
 
 class AnalizadorLexico {
@@ -6,7 +7,7 @@ class AnalizadorLexico {
     char caracterActual;
     SourceManager SourceManager;
 
-    public AnalizadorLexico (SourceManager gestor) {
+    public AnalizadorLexico(SourceManager gestor) {
         SourceManager = gestor;
         actualizarCaracterActual();
     }
@@ -21,7 +22,32 @@ class AnalizadorLexico {
     }
 
     private Cacho actualizarCaracterActual() {
-        caracterActual = SourceManager.proximoCaracter();
+        caracterActual = SourceManager.getNextChar();
+    }
+
+    private Token checkForPunctuation() {
+        if (caracterActual == '(')
+            return new Token(TokenType.openParenthesis, lexema, SourceManager.getLineNumber());
+        if (caracterActual == ')')
+            return new Token(TokenType.closeParenthesis, lexema, SourceManager.getLineNumber());
+        if (caracterActual == '[')
+            return new Token(TokenType.openSquareBracket, lexema, SourceManager.getLineNumber());
+        if (caracterActual == ']')
+            return new Token(TokenType.closeSquareBracket, lexema, SourceManager.getLineNumber());
+        if (caracterActual == '{')
+            return new Token(TokenType.openBraces, lexema, SourceManager.getLineNumber());
+        if (caracterActual == '}')
+            return new Token(TokenType.closeBraces, lexema, SourceManager.getLineNumber());
+        if (caracterActual == ';')
+            return new Token(TokenType.semicolon, lexema, SourceManager.getLineNumber());
+        if (caracterActual == ',')
+            return new Token(TokenType.comma, lexema, SourceManager.getLineNumber());
+        if (caracterActual == '.')
+            return new Token(TokenType.period, lexema, SourceManager.getLineNumber());
+        if (caracterActual == ':')
+            return new Token(TokenType.twopoints, lexema, SourceManager.getLineNumber());
+        else
+            return null;
     }
 
     private Token e0() {
@@ -46,6 +72,14 @@ class AnalizadorLexico {
             actualizarLexema();
             throw new ExcepcionLexica(lexema, SourceManager.nroLinea());
         }
+
+        Token punctuation = checkForPunctuation();
+        if (punctuation != null)
+            return punctuation;
+
+        // No es caracter valido
+
+        // ERROR
     }
 
     private Token e1() {
@@ -74,7 +108,7 @@ class AnalizadorLexico {
             actualizarCaracterActual();
             return e4();
         } else {
-            return new Token("Mayor", lexema, SourceManager.nroLinea());
+            return new Token(TokenType.greater, lexema, SourceManager.getLineNumber());
         }
     }
 
