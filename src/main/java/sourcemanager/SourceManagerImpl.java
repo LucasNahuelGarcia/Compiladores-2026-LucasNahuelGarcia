@@ -50,6 +50,9 @@ public class SourceManagerImpl implements SourceManager{
             currentChar = '\n';
             mustReadNextLine = true;
         } else {
+            if (currentLine.isEmpty()) {
+                lineNumber++;
+            }
             currentChar = END_OF_FILE;
         }
 

@@ -1,2 +1,18 @@
-.vscode
-.metals
+.vscode/
+.metals/
+
+# Dependencies copied locally
+lib/
+
+# Java build output
+*.class
+bin/
+out/
+target/
+
+# Gradle
+.gradle/
+build/
+
+# Kotlin plugin data
+.kotlin/

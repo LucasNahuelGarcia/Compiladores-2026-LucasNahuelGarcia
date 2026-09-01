@@ -1,6 +1,6 @@
 package src.main.java.analizadorLexico;
 
-class Token {
+public class Token {
     private final TokenType tokenType;
     private final String lexema;
     private final int nroLinea;
@@ -23,12 +23,12 @@ class Token {
         return nroLinea;
     }
 
+    public boolean isEOF() {
+        return tokenType == TokenType.EOF;
+    }
+
     @Override
     public String toString() {
-        return "Token{" +
-                "tokenType=" + tokenType +
-                ", lexema='" + lexema + '\'' +
-                ", nroLinea=" + nroLinea +
-                '}';
+        return "(" + tokenType + "," + lexema + "," + nroLinea + ")";
     }
 }

@@ -6,7 +6,7 @@ import java.util.List;
 
 import src.main.java.sourcemanager.*;
 
-class AnalizadorLexico {
+public class AnalizadorLexico {
     private static final int _intLiteral_MaxLength = 9;
     String lexema;
     char caracterActual;
@@ -72,6 +72,11 @@ class AnalizadorLexico {
             return e_IdentificadorMetodoVariable();
         }
 
+        if (caracterActual == '/') {
+            consumir();
+            return e_slash();
+        }
+
         Token punctuation = checkForPunctuation();
         if (punctuation != null)
             return punctuation;
@@ -85,6 +90,16 @@ class AnalizadorLexico {
     private Token guardarError() {
         errors.add(new Error(lexema, SourceManager.getLineNumber()));
         return proximoToken();
+    }
+
+    public boolean tieneErrores() {
+        return !errors.isEmpty();
+    }
+
+    public void imprimirErrores() {
+        for (Error error : errors) {
+            System.out.println("[Error:" + error.lexema + "|" + error.nroLinea + "]");
+        }
     }
 
     private Token e_literalEntero() {
@@ -106,6 +121,10 @@ class AnalizadorLexico {
     }
 
     private Token e_literalString() {
+        if (SourceManager.isEOF(caracterActual) || caracterActual == '\n') {
+            return guardarError();
+        }
+
         if (caracterActual == '"') {
             consumir();
             return createToken(TokenType.stringLiteral);
@@ -113,26 +132,19 @@ class AnalizadorLexico {
 
         if (caracterActual == '\\') {
             consumir();
+            if (SourceManager.isEOF(caracterActual) || caracterActual == '\n') {
+                return guardarError();
+            }
+            consumir();
             return e_literalString_1();
         }
 
-        if (Character.isLetter(caracterActual)) {
-            consumir();
-            return e_literalString();
-        }
-
         consumir();
-        return guardarError();
+        return e_literalString();
     }
 
     private Token e_literalString_1() {
-        if (caracterActual == '"') {
-            consumir();
-            return e_literalString();
-        }
-
-        consumir();
-        return guardarError();
+        return e_literalString();
     }
 
     private Token e_literalChar() {
@@ -176,7 +188,6 @@ class AnalizadorLexico {
             return e_IdentificadorClase();
         }
 
-        consumir();
         return createToken(TokenType.IdentificadorDeParametroDeTipo);
     }
 
@@ -190,41 +201,89 @@ class AnalizadorLexico {
     }
 
     private Token e_IdentificadorMetodoVariable() {
-        if (Character.isAlphabetic(caracterActual) || caracterActual == '_' || caracterActual == '-') {
+        if (Character.isAlphabetic(caracterActual) || Character.isDigit(caracterActual) || caracterActual == '_') {
+            consumir();
             return e_IdentificadorMetodoVariable();
         }
 
-        consumir();
+        return createToken(TokenType.identificador);
+    }
+
+    private Token e_slash() {
+        if (caracterActual == '/') {
+            while (!SourceManager.isEOF(caracterActual) && caracterActual != '\n') {
+                actualizarCaracterActual();
+            }
+
+            lexema = "";
+            if (caracterActual == '\n') {
+                actualizarCaracterActual();
+            }
+            return e0();
+        }
+
         return guardarError();
     }
 
     private Token e_EOF() {
+        lexema = "$";
         return createToken(TokenType.EOF);
     }
 
     private Token checkForPunctuation() {
-        if (caracterActual == '(')
+        if (caracterActual == '(') {
+            consumir();
             return createToken(TokenType.openParenthesis);
-        if (caracterActual == ')')
+        }
+        if (caracterActual == ')') {
+            consumir();
             return createToken(TokenType.closeParenthesis);
-        if (caracterActual == '[')
+        }
+        if (caracterActual == '[') {
+            consumir();
             return createToken(TokenType.openSquareBracket);
-        if (caracterActual == ']')
+        }
+        if (caracterActual == ']') {
+            consumir();
             return createToken(TokenType.closeSquareBracket);
-        if (caracterActual == '{')
+        }
+        if (caracterActual == '{') {
+            consumir();
             return createToken(TokenType.openBraces);
-        if (caracterActual == '}')
+        }
+        if (caracterActual == '}') {
+            consumir();
             return createToken(TokenType.closeBraces);
-        if (caracterActual == ';')
+        }
+        if (caracterActual == ';') {
+            consumir();
             return createToken(TokenType.semicolon);
-        if (caracterActual == ',')
+        }
+        if (caracterActual == ',') {
+            consumir();
             return createToken(TokenType.comma);
-        if (caracterActual == '.')
+        }
+        if (caracterActual == '.') {
+            consumir();
             return createToken(TokenType.period);
-        if (caracterActual == ':')
+        }
+        if (caracterActual == ':') {
+            consumir();
             return createToken(TokenType.twopoints);
-        else
-            return null;
+        }
+        if (caracterActual == '+') {
+            consumir();
+            return createToken(TokenType.plus);
+        }
+        if (caracterActual == '=') {
+            consumir();
+            return createToken(TokenType.assignment);
+        }
+        if (caracterActual == '>') {
+            consumir();
+            return createToken(TokenType.greater);
+        }
+        return null;
     }
 
     private void consumir() {
