@@ -1,12 +1,10 @@
-package AnalizadorLexico;
+package src.main.java.analizadorLexico;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.xml.transform.Source;
-
-import sourcemanager.*;
+import src.main.java.sourcemanager.*;
 
 class AnalizadorLexico {
     private static final int _intLiteral_MaxLength = 9;
@@ -40,6 +38,10 @@ class AnalizadorLexico {
     }
 
     private Token e0() {
+        if (SourceManager.isEOF(caracterActual)) {
+            return e_EOF();
+        }
+
         if (Character.isDigit(caracterActual)) {
             consumir();
             return e_literalEntero();

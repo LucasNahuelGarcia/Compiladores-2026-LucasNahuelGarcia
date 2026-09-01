@@ -1,4 +1,4 @@
-package AnalizadorLexico;
+package src.main.java.analizadorLexico;
 
 class Error {
     String lexema;

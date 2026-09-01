@@ -1,4 +1,4 @@
-package sourcemanager;
+package src.main.java.sourcemanager;
 //Author: Juan Dingevan
 
 import java.io.*;
