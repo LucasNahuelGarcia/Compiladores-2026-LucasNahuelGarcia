@@ -13,5 +13,8 @@ public interface SourceManager {
 
     int getLineNumber();
 
+    boolean isEOF(char caracterActual);
+
     public static final char END_OF_FILE = (char) 26;
+
 }

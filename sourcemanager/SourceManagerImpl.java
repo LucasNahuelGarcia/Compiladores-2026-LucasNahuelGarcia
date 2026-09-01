@@ -61,4 +61,9 @@ public class SourceManagerImpl implements SourceManager{
         return lineNumber;
     }
 
+    @Override
+    public boolean isEOF(char caracterActual) {
+        return caracterActual == END_OF_FILE;
+    }
+
 }
