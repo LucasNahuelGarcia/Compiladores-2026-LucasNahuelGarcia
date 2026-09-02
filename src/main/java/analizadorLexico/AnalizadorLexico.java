@@ -234,12 +234,51 @@ public class AnalizadorLexico {
         if (Character.isDigit(caracterActual)) {
             consumir();
             if (currentLength >= _intLiteral_MaxLength)
-                return guardarError("Un literal entero no puede exceder los 9 dígitos.");
-
+                return e_literalIntMuyLargo();
             return e_literalEntero(currentLength + 1);
         }
 
+        if (caracterActual == '.') {
+            consumir();
+            return e_literalFloat();
+        }
+
+        if (caracterActual == 'f' || caracterActual == 'F') {
+            return e_literalFloat();
+        }
+
         return createToken(TokenType.intLiteral);
+    }
+
+    private Token e_literalIntMuyLargo() {
+        if (Character.isDigit(caracterActual)) {
+            consumir();
+            return e_literalIntMuyLargo();
+        }
+        if (caracterActual == '.') {
+            consumir();
+            return e_literalFloat();
+        }
+
+        return guardarError("Un literal entero no puede exceder los 9 dígitos.");
+    }
+
+    private Token e_literalFloat() {
+        if (Character.isDigit(caracterActual)) {
+            consumir();
+            return e_literalFloat();
+        }
+
+        if (caracterActual == 'e' || caracterActual == 'E') {
+            consumir();
+            return e_literalFloat();
+        }
+
+        if (caracterActual == 'f' || caracterActual == 'F') {
+            consumir();
+        }
+
+        return createToken(TokenType.floatLiteral);
     }
 
     private Token e_literalString() {
