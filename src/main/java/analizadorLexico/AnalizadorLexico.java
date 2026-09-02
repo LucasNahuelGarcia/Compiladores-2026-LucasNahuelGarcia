@@ -288,9 +288,13 @@ public class AnalizadorLexico {
     }
 
     private Token e_literalFLoat_Exp() {
-        if (caracterActual == '+' || caracterActual == '-' || Character.isDigit(caracterActual)) {
+        if (caracterActual == '+' || caracterActual == '-') {
             consumir();
             return e_literalFLoat_Exp_0();
+        }
+        if(Character.isDigit(caracterActual)) {
+            consumir();
+            return e_literalFLoat_Exp_1();
         }
 
         return guardarError("Literal Float mal formado. Se esperaba: '+', '-', o Num.");
@@ -299,7 +303,16 @@ public class AnalizadorLexico {
     private Token e_literalFLoat_Exp_0() {
         if (Character.isDigit(caracterActual)) {
             consumir();
-            return e_literalFLoat_Exp_0();
+            return e_literalFLoat_Exp_1();
+        }
+
+        return guardarError("Literal Float mal formado. Se esperaba: Num.");
+    }
+
+    private Token e_literalFLoat_Exp_1() {
+        if (Character.isDigit(caracterActual)) {
+            consumir();
+            return e_literalFLoat_Exp_1();
         }
         if (caracterActual == 'f' || caracterActual == 'F') {
             consumir();
