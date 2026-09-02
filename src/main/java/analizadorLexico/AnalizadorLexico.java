@@ -324,7 +324,58 @@ public class AnalizadorLexico {
             return e_IdentificadorMetodoVariable();
         }
 
+        Token palabraReservada = getPalabraReservadaFromLexema();
+        if (palabraReservada != null)
+            return palabraReservada;
+
         return createToken(TokenType.identificador);
+    }
+
+    private Token getPalabraReservadaFromLexema() {
+        switch (lexema) {
+            case "class":
+                return createToken(TokenType.kw_class);
+            case "extends":
+                return createToken(TokenType.kw_extends);
+            case "interface":
+                return createToken(TokenType.kw_interface);
+            case "implements":
+                return createToken(TokenType.kw_implements);
+            case "static":
+                return createToken(TokenType.kw_static);
+            case "boolean":
+                return createToken(TokenType.kw_boolean);
+            case "char":
+                return createToken(TokenType.kw_char);
+            case "int":
+                return createToken(TokenType.kw_int);
+            case "void":
+                return createToken(TokenType.kw_void);
+            case "public":
+                return createToken(TokenType.kw_public);
+            case "if":
+                return createToken(TokenType.kw_if);
+            case "else":
+                return createToken(TokenType.kw_else);
+            case "while":
+                return createToken(TokenType.kw_while);
+            case "return":
+                return createToken(TokenType.kw_return);
+            case "var":
+                return createToken(TokenType.kw_var);
+            case "this":
+                return createToken(TokenType.kw_this);
+            case "new":
+                return createToken(TokenType.kw_new);
+            case "null":
+                return createToken(TokenType.kw_null);
+            case "true":
+                return createToken(TokenType.kw_true);
+            case "false":
+                return createToken(TokenType.kw_false);
+            default:
+                return null;
+        }
     }
 
     private Token e_slash() {
