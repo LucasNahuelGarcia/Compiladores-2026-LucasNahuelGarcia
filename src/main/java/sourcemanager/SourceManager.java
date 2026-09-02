@@ -17,4 +17,6 @@ public interface SourceManager {
 
     public static final char END_OF_FILE = (char) 26;
 
+    String getLine(int nroLinea);
+
 }

@@ -129,10 +129,8 @@ public class AnalizadorLexico {
         if (punctuation != null)
             return punctuation;
 
-        // No es caracter reconocido
-        // ERROR
         consumir();
-        return guardarError();
+        return guardarError("No es un caracter reconocido en el lenguaje.");
     }
 
     private Token e_greaterThan() {
@@ -177,7 +175,7 @@ public class AnalizadorLexico {
             return createToken(TokenType.and);
         }
 
-        return guardarError();
+        return guardarError("Se esperaba '&' a continuación.");
     }
 
     private Token e_or() {
@@ -186,7 +184,7 @@ public class AnalizadorLexico {
             return createToken(TokenType.or);
         }
 
-        return guardarError();
+        return guardarError("Se esperaba '|' a continuación.");
     }
 
     private Token e_plus() {
@@ -207,8 +205,8 @@ public class AnalizadorLexico {
         return createToken(TokenType.minus);
     }
 
-    private Token guardarError() {
-        errors.add(new Error(lexema, SourceManager.getLineNumber()));
+    private Token guardarError(String explicacion) {
+        errors.add(new Error(lexema, SourceManager.getLineNumber(), explicacion));
         return proximoToken();
     }
 
@@ -218,7 +216,10 @@ public class AnalizadorLexico {
 
     public void imprimirErrores() {
         for (Error error : errors) {
-            System.out.println("[Error:" + error.lexema + "|" + error.nroLinea + "]");
+            String explicacion = "\nError Léxico en linea " + error.nroLinea + ": " + error.explicacion;
+            explicacion = explicacion + '\n';
+            explicacion = explicacion + SourceManager.getLine(error.nroLinea);
+            System.out.println(explicacion + "\n[Error:" + error.lexema + "|" + error.nroLinea + "]");
         }
     }
 
@@ -230,7 +231,7 @@ public class AnalizadorLexico {
         if (Character.isDigit(caracterActual)) {
             consumir();
             if (currentLength >= _intLiteral_MaxLength)
-                return guardarError();
+                return guardarError("Un literal entero no puede exceder los 9 dígitos.");
 
             return e_literalEntero(currentLength + 1);
         }
@@ -240,7 +241,7 @@ public class AnalizadorLexico {
 
     private Token e_literalString() {
         if (SourceManager.isEOF(caracterActual) || caracterActual == '\n') {
-            return guardarError();
+            return guardarError("String mal formado.");
         }
 
         if (caracterActual == '"') {
@@ -251,7 +252,7 @@ public class AnalizadorLexico {
         if (caracterActual == '\\') {
             consumir();
             if (SourceManager.isEOF(caracterActual) || caracterActual == '\n') {
-                return guardarError();
+                return guardarError("Se esperaba un caracter luego de '\\'");
             }
             consumir();
             return e_literalString_1();
@@ -277,12 +278,12 @@ public class AnalizadorLexico {
         }
 
         consumir();
-        return guardarError();
+        return guardarError("Literal Char no puede estar vacio.");
     }
 
     private Token e_literalChar_1_scape() {
-        if (caracterActual == '$') {
-            return guardarError();
+        if (SourceManager.isEOF(caracterActual)) {
+            return guardarError("Fin del archivo inesperado.");
         }
 
         consumir();
@@ -296,7 +297,7 @@ public class AnalizadorLexico {
         }
 
         consumir();
-        return guardarError();
+        return guardarError("Se esperaba '''");
     }
 
     private Token e_IdentificadorParametroTipoClase() {

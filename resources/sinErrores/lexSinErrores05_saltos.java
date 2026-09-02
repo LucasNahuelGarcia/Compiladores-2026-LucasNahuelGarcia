@@ -1,5 +1,6 @@
 class Saltos {
-var a = 1;var b = 2;
+var a = 1;
+var b = 2;
 }
 //#class,1
 //#Saltos,1
@@ -15,4 +16,4 @@ var a = 1;var b = 2;
 //#2,3
 //#;,3
 //#},4
-//#$,19
+//#$,20
