@@ -1,4 +1,4 @@
-package src.main.java.analizadorLexico;
+package analizadorLexico;
 
 public class Token {
     private final TokenType tokenType;

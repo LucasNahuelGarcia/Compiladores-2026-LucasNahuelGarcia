@@ -1,4 +1,4 @@
-package src.test.java;
+package analizadorLexico;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import src.main.java.main.Main;
+import main.Main;
 
 @RunWith(Parameterized.class)
 public class TesterDeCasosConErrores {

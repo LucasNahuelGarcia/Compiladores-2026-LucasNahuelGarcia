@@ -1,11 +1,11 @@
-package src.main.java.main;
+package main;
 
 import java.io.IOException;
 
-import src.main.java.analizadorLexico.AnalizadorLexico;
-import src.main.java.analizadorLexico.Token;
-import src.main.java.sourcemanager.SourceManager;
-import src.main.java.sourcemanager.SourceManagerImpl;
+import analizadorLexico.AnalizadorLexico;
+import analizadorLexico.Token;
+import sourcemanager.SourceManager;
+import sourcemanager.SourceManagerImpl;
 
 public class Main {
     public static void main(String[] args) {

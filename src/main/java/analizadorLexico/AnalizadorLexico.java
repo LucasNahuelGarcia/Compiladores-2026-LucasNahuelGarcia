@@ -1,10 +1,10 @@
-package src.main.java.analizadorLexico;
+package analizadorLexico;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import src.main.java.sourcemanager.*;
+import sourcemanager.*;
 
 public class AnalizadorLexico {
     private static final int _intLiteral_MaxLength = 9;

@@ -1,4 +1,4 @@
-package src.test.java;
+package analizadorLexico;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import src.main.java.main.Main;
+import main.Main;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 @RunWith(Parameterized.class)

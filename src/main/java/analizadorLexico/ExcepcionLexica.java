@@ -1,4 +1,4 @@
-package src.main.java.analizadorLexico;
+package analizadorLexico;
 
 class ExcepcionLexica extends Exception {
 
