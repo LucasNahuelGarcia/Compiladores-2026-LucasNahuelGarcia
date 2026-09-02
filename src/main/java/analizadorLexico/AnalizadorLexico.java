@@ -268,29 +268,28 @@ public class AnalizadorLexico {
     private Token e_literalChar() {
         if (caracterActual == '\\') {
             consumir();
-            return e_literalChar_1();
+            return e_literalChar_1_scape();
         }
 
         if (caracterActual != '\'') {
             consumir();
-            return e_literalChar_2();
+            return e_literalChar_2_end();
         }
 
         consumir();
         return guardarError();
     }
 
-    private Token e_literalChar_1() {
-        if (caracterActual != '\'') {
-            consumir();
-            return e_literalChar_2();
+    private Token e_literalChar_1_scape() {
+        if (caracterActual == '$') {
+            return guardarError();
         }
 
         consumir();
-        return guardarError();
+        return e_literalChar_2_end();
     }
 
-    private Token e_literalChar_2() {
+    private Token e_literalChar_2_end() {
         if (caracterActual == '\'') {
             consumir();
             return createToken(TokenType.charLiteral);
