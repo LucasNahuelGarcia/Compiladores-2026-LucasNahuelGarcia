@@ -304,7 +304,7 @@ public class AnalizadorLexico {
     }
 
     private Token e_IdentificadorParametroTipoClase() {
-        if (Character.isAlphabetic(caracterActual) || Character.isDigit(caracterActual)) {
+        if (Character.isAlphabetic(caracterActual) || Character.isDigit(caracterActual) || caracterActual == '_') {
             consumir();
             return e_IdentificadorClase();
         }
@@ -313,7 +313,7 @@ public class AnalizadorLexico {
     }
 
     private Token e_IdentificadorClase() {
-        if (Character.isAlphabetic(caracterActual) || Character.isDigit(caracterActual)) {
+        if (Character.isAlphabetic(caracterActual) || Character.isDigit(caracterActual) || caracterActual == '_') {
             consumir();
             return e_IdentificadorClase();
         }
