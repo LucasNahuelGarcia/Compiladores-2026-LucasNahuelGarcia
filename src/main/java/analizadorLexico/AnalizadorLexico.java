@@ -244,7 +244,13 @@ public class AnalizadorLexico {
         }
 
         if (caracterActual == 'f' || caracterActual == 'F') {
+            consumir();
             return e_literalFloat();
+        }
+
+        if (caracterActual == 'e' || caracterActual == 'E') {
+            consumir();
+            return e_literalFLoat_Exp();
         }
 
         return createToken(TokenType.intLiteral);
@@ -271,7 +277,7 @@ public class AnalizadorLexico {
 
         if (caracterActual == 'e' || caracterActual == 'E') {
             consumir();
-            return e_literalFloat();
+            return e_literalFLoat_Exp();
         }
 
         if (caracterActual == 'f' || caracterActual == 'F') {
@@ -279,6 +285,28 @@ public class AnalizadorLexico {
         }
 
         return createToken(TokenType.floatLiteral);
+    }
+
+    private Token e_literalFLoat_Exp() {
+        if (caracterActual == '+' || caracterActual == '-' || Character.isDigit(caracterActual)) {
+            consumir();
+            return e_literalFLoat_Exp_0();
+        }
+
+        return guardarError("Literal Float mal formado. Se esperaba: '+', '-', o Num.");
+    }
+
+    private Token e_literalFLoat_Exp_0() {
+        if (Character.isDigit(caracterActual)) {
+            consumir();
+            return e_literalFLoat_Exp_0();
+        }
+        if (caracterActual == 'f' || caracterActual == 'F') {
+            consumir();
+            return createToken(TokenType.floatLiteral);
+        }
+
+        return guardarError("Literal Float mal formado. Se esperaba: 'f'.");
     }
 
     private Token e_literalString() {
