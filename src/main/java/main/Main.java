@@ -37,7 +37,6 @@ public class Main {
             try {
                 sourceManager.close();
             } catch (IOException exception) {
-                // No hay accion util para los tests si falla el cierre.
             }
         }
     }

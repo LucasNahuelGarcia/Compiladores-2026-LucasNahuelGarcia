@@ -59,7 +59,7 @@ public class AnalizadorLexico {
 
         if (Character.isWhitespace(caracterActual)) {
             actualizarCaracterActual();
-            return e0();
+            return proximoToken();
         }
 
         if (Character.isUpperCase(caracterActual)) {
@@ -72,6 +72,54 @@ public class AnalizadorLexico {
             return e_IdentificadorMetodoVariable();
         }
 
+        if (caracterActual == '>') {
+            consumir();
+            return e_greaterThan();
+        }
+
+        if (caracterActual == '<') {
+            consumir();
+            return e_lessThan();
+        }
+
+        if (caracterActual == '!') {
+            consumir();
+            return e_not();
+        }
+
+        if (caracterActual == '=') {
+            consumir();
+            return e_assign();
+        }
+        if (caracterActual == '&') {
+            consumir();
+            return e_and();
+        }
+        if (caracterActual == '|') {
+            consumir();
+            return e_or();
+        }
+
+        if (caracterActual == '%') {
+            consumir();
+            return createToken(TokenType.mod);
+        }
+
+        if (caracterActual == '+') {
+            consumir();
+            return e_plus();
+        }
+
+        if (caracterActual == '-') {
+            consumir();
+            return e_minus();
+        }
+
+        if (caracterActual == '*') {
+            consumir();
+            return createToken(TokenType.multiply);
+        }
+
         if (caracterActual == '/') {
             consumir();
             return e_slash();
@@ -81,10 +129,82 @@ public class AnalizadorLexico {
         if (punctuation != null)
             return punctuation;
 
-        // No es caracter valido
+        // No es caracter reconocido
         // ERROR
         consumir();
         return guardarError();
+    }
+
+    private Token e_greaterThan() {
+        if (caracterActual == '=') {
+            consumir();
+            return createToken(TokenType.greaterThanOrEqual);
+        }
+
+        return createToken(TokenType.greaterThan);
+    }
+
+    private Token e_lessThan() {
+        if (caracterActual == '=') {
+            consumir();
+            return createToken(TokenType.lessThanOrEqual);
+        }
+
+        return createToken(TokenType.lessThan);
+    }
+
+    private Token e_not() {
+        if (caracterActual == '=') {
+            consumir();
+            return createToken(TokenType.notEquals);
+        }
+
+        return createToken(TokenType.not);
+    }
+
+    private Token e_assign() {
+        if (caracterActual == '=') {
+            consumir();
+            return createToken(TokenType.equals);
+        }
+
+        return createToken(TokenType.assignment);
+    }
+
+    private Token e_and() {
+        if (caracterActual == '&') {
+            consumir();
+            return createToken(TokenType.and);
+        }
+
+        return guardarError();
+    }
+
+    private Token e_or() {
+        if (caracterActual == '|') {
+            consumir();
+            return createToken(TokenType.or);
+        }
+
+        return guardarError();
+    }
+
+    private Token e_plus() {
+        if (caracterActual == '+') {
+            consumir();
+            return createToken(TokenType.addOne);
+        }
+
+        return createToken(TokenType.plus);
+    }
+
+    private Token e_minus() {
+        if (caracterActual == '-') {
+            consumir();
+            return createToken(TokenType.subtractOne);
+        }
+
+        return createToken(TokenType.minus);
     }
 
     private Token guardarError() {
@@ -103,17 +223,15 @@ public class AnalizadorLexico {
     }
 
     private Token e_literalEntero() {
-        return e_literalEntero(0);
+        return e_literalEntero(1);
     }
 
     private Token e_literalEntero(int currentLength) {
-        if (currentLength > _intLiteral_MaxLength) {
-            guardarError();
-            return e0();
-        }
-
         if (Character.isDigit(caracterActual)) {
             consumir();
+            if (currentLength >= _intLiteral_MaxLength)
+                return guardarError();
+
             return e_literalEntero(currentLength + 1);
         }
 
@@ -211,18 +329,46 @@ public class AnalizadorLexico {
 
     private Token e_slash() {
         if (caracterActual == '/') {
-            while (!SourceManager.isEOF(caracterActual) && caracterActual != '\n') {
-                actualizarCaracterActual();
-            }
-
-            lexema = "";
-            if (caracterActual == '\n') {
-                actualizarCaracterActual();
-            }
-            return e0();
+            consumir();
+            return e_inlineComment();
         }
 
-        return guardarError();
+        if (caracterActual == '*') {
+            actualizarCaracterActual();
+            return e_multiLineComment();
+        }
+
+        return createToken(TokenType.operatorSlash);
+    }
+
+    private Token e_inlineComment() {
+        while (!SourceManager.isEOF(caracterActual) && caracterActual != '\n')
+            consumir();
+
+        if (caracterActual == '\n') {
+            consumir();
+        }
+        return proximoToken();
+    }
+
+    private Token e_multiLineComment() {
+        if (caracterActual == '*') {
+            actualizarCaracterActual();
+            return e_multiLineComment_1();
+        }
+
+        actualizarCaracterActual();
+        System.out.println(caracterActual);
+        return e_multiLineComment();
+    }
+
+    private Token e_multiLineComment_1() {
+        if (caracterActual == '/') {
+            actualizarCaracterActual();
+            return proximoToken();
+        }
+        actualizarCaracterActual();
+        return e_multiLineComment();
     }
 
     private Token e_EOF() {
@@ -270,18 +416,6 @@ public class AnalizadorLexico {
         if (caracterActual == ':') {
             consumir();
             return createToken(TokenType.twopoints);
-        }
-        if (caracterActual == '+') {
-            consumir();
-            return createToken(TokenType.plus);
-        }
-        if (caracterActual == '=') {
-            consumir();
-            return createToken(TokenType.assignment);
-        }
-        if (caracterActual == '>') {
-            consumir();
-            return createToken(TokenType.greater);
         }
         return null;
     }
