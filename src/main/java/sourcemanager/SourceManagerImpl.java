@@ -6,13 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SourceManagerImpl implements SourceManager{
+public class SourceManagerImpl implements SourceManager {
     private List<String> lines;
     private String currentLine;
     private int lineNumber;
     private int lineIndexNumber;
     private int currentLineIndex;
-
 
     public SourceManagerImpl() {
         lines = new ArrayList<>();
