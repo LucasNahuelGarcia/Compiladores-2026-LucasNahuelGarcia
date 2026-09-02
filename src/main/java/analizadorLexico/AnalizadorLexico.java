@@ -245,7 +245,7 @@ public class AnalizadorLexico {
 
         if (caracterActual == 'f' || caracterActual == 'F') {
             consumir();
-            return e_literalFloat();
+            return e_literalFloat_int();
         }
 
         if (caracterActual == 'e' || caracterActual == 'E') {
@@ -254,6 +254,13 @@ public class AnalizadorLexico {
         }
 
         return createToken(TokenType.intLiteral);
+    }
+
+    private Token e_literalFloat_int() {
+        if (Character.isDigit(caracterActual) || Character.isAlphabetic(caracterActual))
+            return guardarError("Literal Float mal formado. No se espearban mas digitos luego de 'f'.");
+
+        return createToken(TokenType.floatLiteral);
     }
 
     private Token e_literalIntMuyLargo() {
@@ -292,7 +299,7 @@ public class AnalizadorLexico {
             consumir();
             return e_literalFLoat_Exp_0();
         }
-        if(Character.isDigit(caracterActual)) {
+        if (Character.isDigit(caracterActual)) {
             consumir();
             return e_literalFLoat_Exp_1();
         }
