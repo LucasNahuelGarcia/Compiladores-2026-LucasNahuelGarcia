@@ -218,7 +218,10 @@ public class AnalizadorLexico {
         for (Error error : errors) {
             String explicacion = "\nError Léxico en linea " + error.nroLinea + ": " + error.explicacion;
             explicacion = explicacion + '\n';
-            explicacion = explicacion + SourceManager.getLine(error.nroLinea);
+            explicacion = explicacion + SourceManager.getLine(error.nroLinea) + '\n';
+            for (int i = 0; i < error.nroCol - 1; i++)
+                explicacion = explicacion + ' ';
+            explicacion = explicacion + '^';
             System.out.println(explicacion + "\n[Error:" + error.lexema + "|" + error.nroLinea + "]");
         }
     }
