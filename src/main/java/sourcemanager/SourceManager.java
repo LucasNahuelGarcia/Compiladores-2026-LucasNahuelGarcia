@@ -19,4 +19,6 @@ public interface SourceManager {
 
     String getLine(int nroLinea);
 
+    int getColNumber();
+
 }

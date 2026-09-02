@@ -1,3 +1,4 @@
-// [Error:"string|2]
+// [Error:
+|2]
 var str = "string
 roto";

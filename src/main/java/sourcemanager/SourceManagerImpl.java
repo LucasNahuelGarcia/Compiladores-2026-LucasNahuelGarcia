@@ -5,35 +5,36 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-public class SourceManagerImpl implements SourceManager {
-    private List<String> lines;
+public class SourceManagerImpl implements SourceManager{
+    private BufferedReader reader;
     private String currentLine;
     private int lineNumber;
     private int lineIndexNumber;
-    private int currentLineIndex;
+    private boolean mustReadNextLine;
+    private List<String> lines;
+
 
     public SourceManagerImpl() {
         lines = new ArrayList<>();
         currentLine = "";
         lineNumber = 0;
         lineIndexNumber = 0;
-        currentLineIndex = -1;
+        mustReadNextLine = true;
     }
 
     @Override
     public void open(String filePath) throws FileNotFoundException {
         lines.clear();
+        currentLine = "";
         lineNumber = 0;
         lineIndexNumber = 0;
-        currentLineIndex = -1;
-        currentLine = "";
+        mustReadNextLine = true;
 
-        try (BufferedReader bufferedReader = new BufferedReader(
+        try (BufferedReader cacheReader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
             String line;
 
-            while ((line = bufferedReader.readLine()) != null) {
+            while ((line = cacheReader.readLine()) != null) {
                 lines.add(line);
             }
         } catch (IOException exception) {
@@ -43,43 +44,43 @@ public class SourceManagerImpl implements SourceManager {
 
             throw new RuntimeException("No se pudo abrir el archivo fuente.", exception);
         }
+
+        FileInputStream fileInputStream = new FileInputStream(filePath);
+        InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, StandardCharsets.UTF_8);
+
+        reader = new BufferedReader(inputStreamReader);
     }
 
     @Override
     public void close() throws IOException {
+        if (reader != null) {
+            reader.close();
+        }
+
         lines.clear();
-        currentLine = "";
-        lineNumber = 0;
-        lineIndexNumber = 0;
-        currentLineIndex = -1;
     }
 
     @Override
     public char getNextChar() throws IOException {
         char currentChar = ' ';
 
-        if (currentLineIndex == -1 || lineIndexNumber > currentLine.length()) {
-            currentLineIndex++;
-
-            if (currentLineIndex >= lines.size()) {
-                lineNumber = currentLineIndex + 1;
-                currentChar = END_OF_FILE;
-                return currentChar;
-            }
-
-            currentLine = lines.get(currentLineIndex);
-            lineNumber = currentLineIndex + 1;
+        if(mustReadNextLine) {
+            currentLine = reader.readLine();
+            lineNumber++;
             lineIndexNumber = 0;
+            mustReadNextLine = false;
         }
 
-        if (lineIndexNumber < currentLine.length()) {
+        if(lineIndexNumber < currentLine.length()) {
             currentChar = currentLine.charAt(lineIndexNumber);
             lineIndexNumber++;
-        } else if (lineIndexNumber == currentLine.length() && currentLineIndex < lines.size() - 1) {
+        } else if (reader.ready()) {
             currentChar = '\n';
-            lineIndexNumber++;
+            mustReadNextLine = true;
         } else {
-            lineNumber = currentLineIndex + 2;
+            if (currentLine.isEmpty()) {
+                lineNumber++;
+            }
             currentChar = END_OF_FILE;
         }
 
@@ -103,6 +104,11 @@ public class SourceManagerImpl implements SourceManager {
         }
 
         return lines.get(nroLinea - 1);
+    }
+
+    @Override
+    public int getColNumber() {
+        return lineIndexNumber;
     }
 
 }

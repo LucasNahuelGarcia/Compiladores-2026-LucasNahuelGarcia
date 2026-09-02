@@ -10,17 +10,12 @@ public class AnalizadorLexico {
     private static final int _intLiteral_MaxLength = 9;
     String lexema;
     char caracterActual;
-    String contenidoLineaActual;
-    int lineaActual;
-    int columnaActual;
     SourceManager SourceManager;
     private List<Error> errors;
 
     public AnalizadorLexico(SourceManager gestor) {
         SourceManager = gestor;
         errors = new LinkedList<Error>();
-        lineaActual = 1;
-        columnaActual = 0;
         actualizarCaracterActual();
     }
 
@@ -50,21 +45,6 @@ public class AnalizadorLexico {
         if (Character.isDigit(caracterActual)) {
             consumir();
             return e_literalEntero();
-        }
-
-        if (caracterActual == '\n') {
-            proximaLinea();
-            actualizarCaracterActual();
-            return e0();
-        }
-
-        if (caracterActual == '\r') {
-            proximaLinea();
-            actualizarCaracterActual();
-            if (caracterActual == '\n')
-                actualizarCaracterActual();
-
-            return e0();
         }
 
         if (caracterActual == '"') {
@@ -153,11 +133,6 @@ public class AnalizadorLexico {
         return guardarError("No es un caracter reconocido en el lenguaje.");
     }
 
-    private void proximaLinea() {
-        lineaActual++;
-        columnaActual = 0;
-    }
-
     private Token e_greaterThan() {
         if (caracterActual == '=') {
             consumir();
@@ -231,7 +206,7 @@ public class AnalizadorLexico {
     }
 
     private Token guardarError(String explicacion) {
-        errors.add(new Error(lexema, lineaActual, columnaActual, contenidoLineaActual, explicacion));
+        errors.add(new Error(lexema, SourceManager.getLineNumber(), SourceManager.getColNumber(), explicacion));
         return proximoToken();
     }
 
@@ -499,10 +474,9 @@ public class AnalizadorLexico {
     private void consumir() {
         actualizarLexema();
         actualizarCaracterActual();
-        columnaActual++;
     }
 
     private Token createToken(TokenType tokenType) {
-        return new Token(tokenType, lexema, lineaActual);
+        return new Token(tokenType, lexema, SourceManager.getLineNumber());
     }
 }
