@@ -475,7 +475,7 @@ public class AnalizadorLexico {
         }
 
         if (caracterActual == '*') {
-            actualizarCaracterActual();
+            consumir();
             return e_multiLineComment();
         }
 
@@ -493,23 +493,23 @@ public class AnalizadorLexico {
     }
 
     private Token e_multiLineComment() {
-        if (caracterActual == '*') {
-            actualizarCaracterActual();
-            return e_multiLineComment_1();
-        }
+        boolean adentroDeComentario = true;
+        while (adentroDeComentario) {
 
-        actualizarCaracterActual();
-        System.out.println(caracterActual);
-        return e_multiLineComment();
-    }
+            while (caracterActual != '*') {
+                if (SourceManager.isEOF(caracterActual))
+                    return guardarError("Comentario multilinea no cerrado.");
 
-    private Token e_multiLineComment_1() {
-        if (caracterActual == '/') {
+                actualizarCaracterActual();
+            }
+
             actualizarCaracterActual();
-            return proximoToken();
+
+            adentroDeComentario = !(caracterActual == '/');
+
         }
         actualizarCaracterActual();
-        return e_multiLineComment();
+        return proximoToken();
     }
 
     private Token e_EOF() {
