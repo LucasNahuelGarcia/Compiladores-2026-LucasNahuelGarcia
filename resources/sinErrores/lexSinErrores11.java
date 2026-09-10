@@ -5,7 +5,8 @@ class Flotantes {
     var d = 1.5e2f;
     var f = 3.f;
     var g = 1e-3f;
-    var h = 2E+4F;
+    float h = 2E+4F;
+    var i = 5.5;
 }
 //#class,1
 //#Flotantes,1
@@ -40,10 +41,15 @@ class Flotantes {
 //#=,7
 //#1e-3f,7
 //#;,7
-//#var,8
+//#float,8
 //#h,8
 //#=,8
 //#2E+4F,8
 //#;,8
-//#},9
-//#$,49
+//#var,9
+//#i,9
+//#=,9
+//#5.5,9
+//#;,9
+//#},10
+//#$,55
