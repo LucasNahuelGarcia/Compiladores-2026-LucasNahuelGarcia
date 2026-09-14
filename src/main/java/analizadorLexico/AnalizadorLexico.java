@@ -257,9 +257,6 @@ public class AnalizadorLexico {
     }
 
     private Token e_literalFloat_int() {
-        if (Character.isDigit(caracterActual) || Character.isAlphabetic(caracterActual))
-            return guardarError("Literal Float mal formado. No se espearban mas digitos luego de 'f'.");
-
         return createToken(TokenType.floatLiteral);
     }
 
@@ -271,6 +268,14 @@ public class AnalizadorLexico {
         if (caracterActual == '.') {
             consumir();
             return e_literalFloat();
+        }
+        if (caracterActual == 'e' || caracterActual == 'E') {
+            consumir();
+            return e_literalFLoat_Exp();
+        }
+        if (caracterActual == 'f' || caracterActual == 'F') {
+            consumir();
+            return e_literalFloat_int();
         }
 
         return guardarError("Un literal entero no puede exceder los 9 dígitos.");
@@ -323,10 +328,9 @@ public class AnalizadorLexico {
         }
         if (caracterActual == 'f' || caracterActual == 'F') {
             consumir();
-            return createToken(TokenType.floatLiteral);
         }
 
-        return guardarError("Literal Float mal formado. Se esperaba: 'f'.");
+        return createToken(TokenType.floatLiteral);
     }
 
     private Token e_literalString() {

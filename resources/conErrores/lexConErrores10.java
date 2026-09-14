@@ -1,2 +1,4 @@
-// [Error:123f|2]
-var invalido = 123f456f;
+// [Error:/*|4]
+class Incompleto {
+    var a = 1;
+    /*
