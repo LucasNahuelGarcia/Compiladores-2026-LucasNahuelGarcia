@@ -7,7 +7,7 @@ import analizadorLexico.Token;
 import sourcemanager.SourceManager;
 import sourcemanager.SourceManagerImpl;
 
-public class Main {
+public class MainSint {
     public static void main(String[] args) {
         if (args.length == 0) {
             System.out.println("[Error:archivo|0]");

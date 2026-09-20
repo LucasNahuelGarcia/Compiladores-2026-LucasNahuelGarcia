@@ -12,7 +12,7 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import main.Main;
+import main.MainLexico;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 @RunWith(Parameterized.class)
@@ -25,7 +25,7 @@ public class TesterDeCasosSinErrores {
     // TODO: Reemplazar Main por la clase del proyecto que declara:
     // public static void main(String[] args)
     // No es necesario crear una instancia de dicha clase.
-    private static final Main init = null;
+    private static final MainLexico init = null;
 
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;

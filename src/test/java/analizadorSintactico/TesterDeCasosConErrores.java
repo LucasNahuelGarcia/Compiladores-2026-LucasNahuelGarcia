@@ -1,4 +1,4 @@
-package analizadorLexico;
+package test.java;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -12,13 +12,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import main.MainLexico;
+import main.MainSint;
 
 @RunWith(Parameterized.class)
 public class TesterDeCasosConErrores {
     
     //TODO: el tipo de esta variable init tiene que ser la clase que tiene el main
-    private static final MainLexico init = null;
+    private static final MainSint init = null;
     
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;
