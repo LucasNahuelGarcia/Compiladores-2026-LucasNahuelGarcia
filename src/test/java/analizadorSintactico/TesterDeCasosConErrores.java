@@ -1,4 +1,4 @@
-package test.java;
+package analizadorSintactico;
 
 import java.io.*;
 import java.util.ArrayList;

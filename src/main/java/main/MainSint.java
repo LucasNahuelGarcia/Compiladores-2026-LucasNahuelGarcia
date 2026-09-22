@@ -3,7 +3,9 @@ package main;
 import java.io.IOException;
 
 import analizadorLexico.AnalizadorLexico;
-import analizadorLexico.Token;
+import analizadorLexico.ExcepcionLexica;
+import analizadorSintactico.Inicial;
+import analizadorSintactico.ExcepcionSintactica;
 import sourcemanager.SourceManager;
 import sourcemanager.SourceManagerImpl;
 
@@ -19,18 +21,11 @@ public class MainSint {
         try {
             sourceManager.open(args[0]);
             AnalizadorLexico analizadorLexico = new AnalizadorLexico(sourceManager);
-            Token token;
-
-            do {
-                token = analizadorLexico.proximoToken();
-                System.out.println(token);
-            } while (!token.isEOF());
-
-            if (analizadorLexico.tieneErrores()) {
-                analizadorLexico.imprimirErrores();
-            } else {
-                System.out.println("[SinErrores]");
-            }
+            new Inicial().parse(analizadorLexico);
+            System.out.println("Compilacion Exitosa");
+            System.out.println("[SinErrores]");
+        } catch (ExcepcionLexica | ExcepcionSintactica exception) {
+            System.out.println(exception.getMessage());
         } catch (IOException exception) {
             System.out.println("[Error:archivo|0]");
         } finally {
@@ -40,4 +35,5 @@ public class MainSint {
             }
         }
     }
+
 }
