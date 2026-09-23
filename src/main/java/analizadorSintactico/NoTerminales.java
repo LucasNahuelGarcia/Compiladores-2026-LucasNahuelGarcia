@@ -43,7 +43,10 @@ final class GenericidadOpcional implements NoTerminal {
     public void parse(ContextoSintactico c) {
         if (c.es(TokenType.lessThan)) {
             c.match(TokenType.lessThan);
-            c.match(TokenType.IdentificadorDeParametroDeTipo);
+            if (c.es(TokenType.IdentificadorDeParametroDeTipo))
+                c.match(TokenType.IdentificadorDeParametroDeTipo);
+            else
+                c.match(TokenType.identificadorDeClase);
             c.match(TokenType.greaterThan);
         }
     }
@@ -86,13 +89,27 @@ final class ListaMetodosInterfaz implements NoTerminal {
 
 final class Miembro implements NoTerminal {
     public void parse(ContextoSintactico c) {
+        new VisibilidadOpcional().parse(c);
+        new MiembroSinVisibilidad().parse(c);
+    }
+}
+
+final class VisibilidadOpcional implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (c.es(TokenType.kw_public))
+            c.match(TokenType.kw_public);
+        else if (c.es(TokenType.kw_private))
+            c.match(TokenType.kw_private);
+        else if (c.es(TokenType.kw_protected))
+            c.match(TokenType.kw_protected);
+    }
+}
+
+final class MiembroSinVisibilidad implements NoTerminal {
+    public void parse(ContextoSintactico c) {
         if (c.es(TokenType.kw_static)) {
             c.match(TokenType.kw_static);
             new MetodoStaticResto().parse(c);
-            return;
-        }
-        if (c.es(TokenType.kw_public)) {
-            new Constructor().parse(c);
             return;
         }
         if (c.es(TokenType.kw_void)) {
@@ -102,9 +119,22 @@ final class Miembro implements NoTerminal {
             new Bloque().parse(c);
             return;
         }
-        new Tipo().parse(c);
-        c.match(TokenType.identificador);
-        new RestoMiembroConTipo().parse(c);
+        if (ContextoSintactico.cualquiera(c, TokenType.kw_boolean, TokenType.kw_char, TokenType.kw_int)) {
+            new TipoPrimitivo().parse(c);
+            new DimensionesOpcionales().parse(c);
+            c.match(TokenType.identificador);
+            new RestoMiembroConTipo().parse(c);
+            return;
+        }
+        if (c.es(TokenType.IdentificadorDeParametroDeTipo)) {
+            c.match(TokenType.IdentificadorDeParametroDeTipo);
+            new DimensionesOpcionales().parse(c);
+            c.match(TokenType.identificador);
+            new RestoMiembroConTipo().parse(c);
+            return;
+        }
+        c.match(TokenType.identificadorDeClase);
+        new RestoMiembroIdClase().parse(c);
     }
 }
 
@@ -128,17 +158,23 @@ final class MetodoStaticResto implements NoTerminal {
     }
 }
 
-final class Constructor implements NoTerminal {
+final class RestoMiembroIdClase implements NoTerminal {
     public void parse(ContextoSintactico c) {
-        c.match(TokenType.kw_public);
-        c.match(TokenType.identificadorDeClase);
-        new ArgsFormales().parse(c);
-        new Bloque().parse(c);
+        if (c.es(TokenType.openParenthesis)) {
+            new ArgsFormales().parse(c);
+            new Bloque().parse(c);
+        } else {
+            new TipoGenericoOpcional().parse(c);
+            new DimensionesOpcionales().parse(c);
+            c.match(TokenType.identificador);
+            new RestoMiembroConTipo().parse(c);
+        }
     }
 }
 
 final class MetodoInterfaz implements NoTerminal {
     public void parse(ContextoSintactico c) {
+        new VisibilidadOpcional().parse(c);
         new TipoMetodo().parse(c);
         c.match(TokenType.identificador);
         new ArgsFormales().parse(c);
@@ -302,6 +338,10 @@ final class Sentencia implements NoTerminal {
             new While().parse(c);
             return;
         }
+        if (c.es(TokenType.kw_for)) {
+            new For().parse(c);
+            return;
+        }
         new Expresion().parse(c);
         c.match(TokenType.semicolon);
     }
@@ -325,8 +365,22 @@ final class Return implements NoTerminal {
 
 final class ExpresionOpcional implements NoTerminal {
     public void parse(ContextoSintactico c) {
-        if (!c.es(TokenType.semicolon))
+        if (!c.es(TokenType.semicolon) && !c.es(TokenType.closeParenthesis))
             new Expresion().parse(c);
+    }
+}
+
+final class For implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        c.match(TokenType.kw_for);
+        c.match(TokenType.openParenthesis);
+        new ExpresionOpcional().parse(c);
+        c.match(TokenType.semicolon);
+        new ExpresionOpcional().parse(c);
+        c.match(TokenType.semicolon);
+        new ExpresionOpcional().parse(c);
+        c.match(TokenType.closeParenthesis);
+        new Sentencia().parse(c);
     }
 }
 
@@ -540,7 +594,7 @@ final class Instanciacion implements NoTerminal {
             new ArgsODimensiones().parse(c);
         } else {
             c.match(TokenType.IdentificadorDeParametroDeTipo);
-            new ArgsODimensiones().parse(c);
+            new DimensionesConTamanio().parse(c);
         }
     }
 }

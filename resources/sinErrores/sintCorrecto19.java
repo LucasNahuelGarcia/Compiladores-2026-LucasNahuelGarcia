@@ -1,0 +1,3 @@
+///[SinErrores]
+class Generica<T> {
+}

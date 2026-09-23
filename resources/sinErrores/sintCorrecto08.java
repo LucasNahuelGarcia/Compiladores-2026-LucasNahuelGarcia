@@ -1,0 +1,3 @@
+///[SinErrores]
+interface Vacia {
+}

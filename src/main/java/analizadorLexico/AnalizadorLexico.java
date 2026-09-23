@@ -447,12 +447,18 @@ public class AnalizadorLexico {
                 return createToken(TokenType.kw_void);
             case "public":
                 return createToken(TokenType.kw_public);
+            case "private":
+                return createToken(TokenType.kw_private);
+            case "protected":
+                return createToken(TokenType.kw_protected);
             case "if":
                 return createToken(TokenType.kw_if);
             case "else":
                 return createToken(TokenType.kw_else);
             case "while":
                 return createToken(TokenType.kw_while);
+            case "for":
+                return createToken(TokenType.kw_for);
             case "return":
                 return createToken(TokenType.kw_return);
             case "var":

@@ -66,6 +66,9 @@ public class SourceManagerImpl implements SourceManager{
 
         if(mustReadNextLine) {
             currentLine = reader.readLine();
+            if (currentLine == null) {
+                currentLine = "";
+            }
             lineNumber++;
             lineIndexNumber = 0;
             mustReadNextLine = false;
