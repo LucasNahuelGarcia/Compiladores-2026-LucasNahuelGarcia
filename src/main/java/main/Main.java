@@ -5,6 +5,6 @@ public final class Main {
     }
 
     public static void main(String[] args) {
-        MainSint.main(args);
+        MainSemantico.main(args);
     }
 }

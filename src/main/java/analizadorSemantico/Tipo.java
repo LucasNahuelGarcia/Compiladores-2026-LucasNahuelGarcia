@@ -20,4 +20,11 @@ public abstract class Tipo {
     }
 
     public abstract String getNombre();
+
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
+        estaBienDeclarado(tablaSimbolos, null);
+    }
+
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+    }
 }

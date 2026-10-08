@@ -3,6 +3,7 @@ package analizadorSemantico;
 import analizadorLexico.Token;
 
 import java.util.Objects;
+import java.util.Map;
 
 public class EntradaAtributo {
     private Token token;
@@ -61,5 +62,33 @@ public class EntradaAtributo {
 
     public void setEstatico(boolean estatico) {
         this.estatico = estatico;
+    }
+
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
+        estaBienDeclarado(tablaSimbolos, null);
+        }
+
+        public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+        if (tipo != null)
+            tipo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+    }
+
+    EntradaAtributo copiar(Map<String, Tipo> sustituciones) {
+        return new EntradaAtributo(token, nombre, copiarTipo(tipo, sustituciones), visibilidad, estatico);
+    }
+
+    private Tipo copiarTipo(Tipo tipo, Map<String, Tipo> sustituciones) {
+        if (tipo == null)
+            return null;
+        if (tipo instanceof TipoPrimitivo)
+            return new TipoPrimitivo(tipo.getToken(), ((TipoPrimitivo) tipo).getPrimitivo());
+        if (tipo instanceof TipoArreglo)
+            return new TipoArreglo(tipo.getToken(), copiarTipo(((TipoArreglo) tipo).getTipoElemento(), sustituciones));
+        TipoReferencia referencia = (TipoReferencia) tipo;
+        Tipo sustituto = sustituciones.get(referencia.getNombreClase());
+        if (sustituto != null)
+            return copiarTipo(sustituto, sustituciones);
+        return new TipoReferencia(referencia.getToken(), referencia.getNombreClase(),
+            copiarTipo(referencia.getArgumentoGenerico(), sustituciones));
     }
 }

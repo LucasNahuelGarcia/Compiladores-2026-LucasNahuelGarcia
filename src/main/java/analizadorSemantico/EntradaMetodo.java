@@ -29,7 +29,18 @@ public class EntradaMetodo {
     }
 
     public void agregarParametro(EntradaParametro parametro) {
+        if (parametros.containsKey(parametro.getNombre()))
+            throw new ExcepcionSemantica(parametro.getToken(),
+                    "el parametro '" + parametro.getNombre() + "' ya fue declarado");
         parametros.put(parametro.getNombre(), parametro);
+    }
+
+    public String getClaveFirma() {
+        return nombre + "/" + parametros.size();
+    }
+
+    public String getClaveConstructor() {
+        return String.valueOf(parametros.size());
     }
 
     public Token getToken() {
@@ -78,5 +89,41 @@ public class EntradaMetodo {
 
     public void setParametros(Map<String, EntradaParametro> parametros) {
         this.parametros = new LinkedHashMap<>(parametros);
+    }
+
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
+        estaBienDeclarado(tablaSimbolos, null);
+    }
+
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+        if (tipoRetorno != null)
+            tipoRetorno.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+        for (EntradaParametro parametro : parametros.values())
+            parametro.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+    }
+
+    EntradaMetodo copiar(Map<String, Tipo> sustituciones) {
+        EntradaMetodo copia = new EntradaMetodo(token, nombre,
+                copiarTipo(tipoRetorno, sustituciones), visibilidad, estatico);
+        for (EntradaParametro parametro : parametros.values())
+            copia.agregarParametro(new EntradaParametro(
+                    parametro.getToken(), parametro.getNombre(),
+                    copiarTipo(parametro.getTipo(), sustituciones)));
+        return copia;
+    }
+
+    private Tipo copiarTipo(Tipo tipo, Map<String, Tipo> sustituciones) {
+        if (tipo == null)
+            return null;
+        if (tipo instanceof TipoPrimitivo)
+            return new TipoPrimitivo(tipo.getToken(), ((TipoPrimitivo) tipo).getPrimitivo());
+        if (tipo instanceof TipoArreglo)
+            return new TipoArreglo(tipo.getToken(), copiarTipo(((TipoArreglo) tipo).getTipoElemento(), sustituciones));
+        TipoReferencia referencia = (TipoReferencia) tipo;
+        Tipo sustituto = sustituciones.get(referencia.getNombreClase());
+        if (sustituto != null)
+            return copiarTipo(sustituto, sustituciones);
+        return new TipoReferencia(referencia.getToken(), referencia.getNombreClase(),
+                copiarTipo(referencia.getArgumentoGenerico(), sustituciones));
     }
 }

@@ -22,4 +22,14 @@ public class TipoArreglo extends Tipo {
     public String getNombre() {
         return tipoElemento.getNombre() + "[]";
     }
+
+    @Override
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
+        estaBienDeclarado(tablaSimbolos, null);
+    }
+
+    @Override
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+        tipoElemento.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+    }
 }

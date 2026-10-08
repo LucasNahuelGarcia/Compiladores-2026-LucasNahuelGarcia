@@ -38,4 +38,13 @@ public class EntradaParametro {
     public void setTipo(Tipo tipo) {
         this.tipo = tipo;
     }
+
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
+        estaBienDeclarado(tablaSimbolos, null);
+    }
+
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+        if (tipo != null)
+            tipo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+    }
 }

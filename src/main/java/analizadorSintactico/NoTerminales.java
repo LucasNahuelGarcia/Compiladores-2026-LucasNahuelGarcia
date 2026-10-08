@@ -1,6 +1,11 @@
 package analizadorSintactico;
 
 import analizadorLexico.TokenType;
+import analizadorLexico.Token;
+import analizadorSemantico.EntradaAtributo;
+import analizadorSemantico.EntradaClase;
+import analizadorSemantico.EntradaMetodo;
+import analizadorSemantico.EntradaParametro;
 
 final class ListaClases implements NoTerminal {
     public void parse(ContextoSintactico c) {
@@ -18,24 +23,36 @@ final class ListaClases implements NoTerminal {
 final class Clase implements NoTerminal {
     public void parse(ContextoSintactico c) {
         c.match(TokenType.kw_class);
-        c.match(TokenType.identificadorDeClase);
+        Token tokenNombre = c.match(TokenType.identificadorDeClase);
+        EntradaClase clase = new EntradaClase(tokenNombre);
+        c.getTablaSimbolos().agregarClase(clase);
+        c.setClaseActual(clase);
         new GenericidadOpcional().parse(c);
         new HerenciaOpcional().parse(c);
         c.match(TokenType.openBraces);
         new ListaMiembros().parse(c);
+        if (clase.getConstructores().isEmpty())
+            clase.agregarConstructor(new EntradaMetodo(tokenNombre, clase.getNombre(), null));
         c.match(TokenType.closeBraces);
+        c.setMetodoActual(null);
+        c.setClaseActual(null);
     }
 }
 
 final class Interfaz implements NoTerminal {
     public void parse(ContextoSintactico c) {
         c.match(TokenType.kw_interface);
-        c.match(TokenType.identificadorDeClase);
+        Token tokenNombre = c.match(TokenType.identificadorDeClase);
+        EntradaClase interfaz = new EntradaClase(tokenNombre, true);
+        c.getTablaSimbolos().agregarClase(interfaz);
+        c.setClaseActual(interfaz);
         new GenericidadOpcional().parse(c);
         new ExtensionOpcional().parse(c);
         c.match(TokenType.openBraces);
         new ListaMetodosInterfaz().parse(c);
         c.match(TokenType.closeBraces);
+        c.setMetodoActual(null);
+        c.setClaseActual(null);
     }
 }
 
@@ -43,10 +60,11 @@ final class GenericidadOpcional implements NoTerminal {
     public void parse(ContextoSintactico c) {
         if (c.es(TokenType.lessThan)) {
             c.match(TokenType.lessThan);
-            if (c.es(TokenType.IdentificadorDeParametroDeTipo))
-                c.match(TokenType.IdentificadorDeParametroDeTipo);
-            else
-                c.match(TokenType.identificadorDeClase);
+            Token parametro = c.es(TokenType.IdentificadorDeParametroDeTipo)
+                    ? c.match(TokenType.IdentificadorDeParametroDeTipo)
+                    : c.match(TokenType.identificadorDeClase);
+            if (c.getClaseActual() != null)
+                c.getClaseActual().setParametroGenerico(parametro.getLexema());
             c.match(TokenType.greaterThan);
         }
     }
@@ -56,11 +74,24 @@ final class HerenciaOpcional implements NoTerminal {
     public void parse(ContextoSintactico c) {
         if (c.es(TokenType.kw_extends)) {
             c.match(TokenType.kw_extends);
-            new TipoReferencia().parse(c);
-        } else if (c.es(TokenType.kw_implements)) {
-            c.match(TokenType.kw_implements);
-            new TipoReferencia().parse(c);
+            Token tokenBase = c.match(TokenType.identificadorDeClase);
+            c.getClaseActual().setClaseBase(tipoBaseConArgumento(c, tokenBase));
         }
+        if (c.es(TokenType.kw_implements)) {
+            c.match(TokenType.kw_implements);
+            Token tokenBase = c.match(TokenType.identificadorDeClase);
+            c.getClaseActual().agregarInterfaz(tipoBaseConArgumento(c, tokenBase));
+        }
+    }
+
+    private analizadorSemantico.TipoReferencia tipoBaseConArgumento(ContextoSintactico c, Token tokenBase) {
+        analizadorSemantico.Tipo argumento = null;
+        if (c.es(TokenType.lessThan)) {
+            c.match(TokenType.lessThan);
+            argumento = new Tipo().parseTipo(c);
+            c.match(TokenType.greaterThan);
+        }
+        return new analizadorSemantico.TipoReferencia(tokenBase, tokenBase.getLexema(), argumento);
     }
 }
 
@@ -68,8 +99,19 @@ final class ExtensionOpcional implements NoTerminal {
     public void parse(ContextoSintactico c) {
         if (c.es(TokenType.kw_extends)) {
             c.match(TokenType.kw_extends);
-            new TipoReferencia().parse(c);
+            Token tokenBase = c.match(TokenType.identificadorDeClase);
+            c.getClaseActual().setClaseBase(tipoBaseConArgumento(c, tokenBase));
         }
+    }
+
+    private analizadorSemantico.TipoReferencia tipoBaseConArgumento(ContextoSintactico c, Token tokenBase) {
+        analizadorSemantico.Tipo argumento = null;
+        if (c.es(TokenType.lessThan)) {
+            c.match(TokenType.lessThan);
+            argumento = new Tipo().parseTipo(c);
+            c.match(TokenType.greaterThan);
+        }
+        return new analizadorSemantico.TipoReferencia(tokenBase, tokenBase.getLexema(), argumento);
     }
 }
 
@@ -109,32 +151,60 @@ final class MiembroSinVisibilidad implements NoTerminal {
     public void parse(ContextoSintactico c) {
         if (c.es(TokenType.kw_static)) {
             c.match(TokenType.kw_static);
-            new MetodoStaticResto().parse(c);
+            registrarMetodo(c, new TipoMetodo().parseTipoMetodo(c), true);
             return;
         }
         if (c.es(TokenType.kw_void)) {
-            c.match(TokenType.kw_void);
-            c.match(TokenType.identificador);
-            new ArgsFormales().parse(c);
-            new Bloque().parse(c);
+            registrarMetodo(c, new TipoMetodo().parseTipoMetodo(c), false);
             return;
         }
         if (ContextoSintactico.cualquiera(c, TokenType.kw_boolean, TokenType.kw_char, TokenType.kw_int)) {
-            new TipoPrimitivo().parse(c);
-            new DimensionesOpcionales().parse(c);
-            c.match(TokenType.identificador);
-            new RestoMiembroConTipo().parse(c);
+            registrarDeclaracion(c, new Tipo().parseTipo(c), false);
             return;
         }
         if (c.es(TokenType.IdentificadorDeParametroDeTipo)) {
-            c.match(TokenType.IdentificadorDeParametroDeTipo);
-            new DimensionesOpcionales().parse(c);
-            c.match(TokenType.identificador);
-            new RestoMiembroConTipo().parse(c);
+            registrarDeclaracion(c, new Tipo().parseTipo(c), false);
             return;
         }
-        c.match(TokenType.identificadorDeClase);
-        new RestoMiembroIdClase().parse(c);
+        registrarDeclaracion(c, new Tipo().parseTipo(c), true);
+    }
+
+    private void registrarMetodo(ContextoSintactico c, analizadorSemantico.Tipo tipoRetorno, boolean estatico) {
+        Token tokenNombre = c.match(TokenType.identificador);
+        EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipoRetorno,
+                "public", estatico);
+        c.setMetodoActual(metodo);
+        new ArgsFormales().parse(c);
+        c.getClaseActual().agregarMetodo(metodo);
+        new Bloque().parse(c);
+        c.setMetodoActual(null);
+    }
+
+    private void registrarDeclaracion(ContextoSintactico c, analizadorSemantico.Tipo tipo, boolean puedeSerConstructor) {
+        if (puedeSerConstructor && c.es(TokenType.openParenthesis)) {
+            EntradaClase clase = c.getClaseActual();
+            EntradaMetodo constructor = new EntradaMetodo(clase.getToken(), clase.getNombre(), null);
+            c.setMetodoActual(constructor);
+            new ArgsFormales().parse(c);
+            clase.agregarConstructor(constructor);
+            new Bloque().parse(c);
+            c.setMetodoActual(null);
+            return;
+        }
+
+        Token tokenNombre = c.match(TokenType.identificador);
+        if (c.es(TokenType.semicolon)) {
+            c.match(TokenType.semicolon);
+            c.getClaseActual().agregarAtributo(new EntradaAtributo(tokenNombre, tokenNombre.getLexema(), tipo));
+            return;
+        }
+
+        EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipo);
+        c.setMetodoActual(metodo);
+        new ArgsFormales().parse(c);
+        c.getClaseActual().agregarMetodo(metodo);
+        new Bloque().parse(c);
+        c.setMetodoActual(null);
     }
 }
 
@@ -175,26 +245,82 @@ final class RestoMiembroIdClase implements NoTerminal {
 final class MetodoInterfaz implements NoTerminal {
     public void parse(ContextoSintactico c) {
         new VisibilidadOpcional().parse(c);
-        new TipoMetodo().parse(c);
-        c.match(TokenType.identificador);
+        analizadorSemantico.Tipo tipoRetorno = new TipoMetodo().parseTipoMetodo(c);
+        Token tokenNombre = c.match(TokenType.identificador);
+        EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipoRetorno);
+        c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
+        c.getClaseActual().agregarMetodo(metodo);
+        c.setMetodoActual(null);
         c.match(TokenType.semicolon);
     }
 }
 
 final class TipoMetodo implements NoTerminal {
     public void parse(ContextoSintactico c) {
+        parseTipoMetodo(c);
+    }
+
+    public analizadorSemantico.Tipo parseTipoMetodo(ContextoSintactico c) {
         if (c.es(TokenType.kw_void))
-            c.match(TokenType.kw_void);
-        else
-            new Tipo().parse(c);
+            return new analizadorSemantico.TipoPrimitivo(c.match(TokenType.kw_void),
+                    analizadorSemantico.TipoPrimitivo.Primitivo.VOID);
+        return new Tipo().parseTipo(c);
     }
 }
 
 final class Tipo implements NoTerminal {
     public void parse(ContextoSintactico c) {
-        new TipoBase().parse(c);
-        new DimensionesOpcionales().parse(c);
+        parseTipo(c);
+    }
+
+    public analizadorSemantico.Tipo parseTipo(ContextoSintactico c) {
+        analizadorSemantico.Tipo tipo;
+        if (c.es(TokenType.kw_boolean)) {
+            tipo = new analizadorSemantico.TipoPrimitivo(c.match(TokenType.kw_boolean),
+                    analizadorSemantico.TipoPrimitivo.Primitivo.BOOLEAN);
+        } else if (c.es(TokenType.kw_char)) {
+            tipo = new analizadorSemantico.TipoPrimitivo(c.match(TokenType.kw_char),
+                    analizadorSemantico.TipoPrimitivo.Primitivo.CHAR);
+        } else if (c.es(TokenType.kw_int)) {
+            tipo = new analizadorSemantico.TipoPrimitivo(c.match(TokenType.kw_int),
+                    analizadorSemantico.TipoPrimitivo.Primitivo.INT);
+        } else if (c.es(TokenType.identificadorDeClase)) {
+            Token tokenTipo = c.match(TokenType.identificadorDeClase);
+            tipo = new analizadorSemantico.TipoReferencia(tokenTipo, tokenTipo.getLexema());
+            tipo = agregarArgumentoGenerico(c, (analizadorSemantico.TipoReferencia) tipo);
+        } else if (c.es(TokenType.IdentificadorDeParametroDeTipo)) {
+            Token tokenTipo = c.match(TokenType.IdentificadorDeParametroDeTipo);
+            tipo = new analizadorSemantico.TipoReferencia(tokenTipo, tokenTipo.getLexema());
+        } else {
+            throw new ExcepcionSintactica(c.actual(), "tipo");
+        }
+
+        while (c.es(TokenType.openSquareBracket)) {
+            Token tokenArreglo = c.match(TokenType.openSquareBracket);
+            c.match(TokenType.closeSquareBracket);
+            tipo = new analizadorSemantico.TipoArreglo(tokenArreglo, tipo);
+        }
+        return tipo;
+    }
+
+    private analizadorSemantico.Tipo agregarArgumentoGenerico(ContextoSintactico c,
+                                                               analizadorSemantico.TipoReferencia tipo) {
+        if (c.es(TokenType.lessThan)) {
+            c.match(TokenType.lessThan);
+            tipo.setArgumentoGenerico(parseTipoBaseGenerico(c));
+            c.match(TokenType.greaterThan);
+        }
+        return tipo;
+    }
+
+    private analizadorSemantico.Tipo parseTipoBaseGenerico(ContextoSintactico c) {
+        if (c.es(TokenType.identificadorDeClase)) {
+            Token token = c.match(TokenType.identificadorDeClase);
+            return new analizadorSemantico.TipoReferencia(token, token.getLexema());
+        }
+        Token token = c.match(TokenType.IdentificadorDeParametroDeTipo);
+        return new analizadorSemantico.TipoReferencia(token, token.getLexema());
     }
 }
 
@@ -290,8 +416,10 @@ final class ListaArgsFormalesPrima implements NoTerminal {
 
 final class ArgFormal implements NoTerminal {
     public void parse(ContextoSintactico c) {
-        new Tipo().parse(c);
-        c.match(TokenType.identificador);
+        analizadorSemantico.Tipo tipo = new Tipo().parseTipo(c);
+        Token tokenNombre = c.match(TokenType.identificador);
+        if (c.getMetodoActual() != null)
+            c.getMetodoActual().agregarParametro(new EntradaParametro(tokenNombre, tokenNombre.getLexema(), tipo));
     }
 }
 

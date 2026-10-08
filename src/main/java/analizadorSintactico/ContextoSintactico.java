@@ -4,13 +4,24 @@ import analizadorLexico.AnalizadorLexico;
 import analizadorLexico.ExcepcionLexica;
 import analizadorLexico.Token;
 import analizadorLexico.TokenType;
+import analizadorSemantico.EntradaClase;
+import analizadorSemantico.EntradaMetodo;
+import analizadorSemantico.TablaSimbolos;
 
 public final class ContextoSintactico {
     private final AnalizadorLexico lexer;
+    private final TablaSimbolos tablaSimbolos;
     private Token actual;
+    private EntradaClase claseActual;
+    private EntradaMetodo metodoActual;
 
     public ContextoSintactico(AnalizadorLexico lexer) {
+        this(lexer, new TablaSimbolos());
+    }
+
+    public ContextoSintactico(AnalizadorLexico lexer, TablaSimbolos tablaSimbolos) {
         this.lexer = lexer;
+        this.tablaSimbolos = tablaSimbolos;
         avanzar();
     }
 
@@ -18,10 +29,18 @@ public final class ContextoSintactico {
     public boolean es(TokenType tipo) { return actual.getTokenType() == tipo; }
     public boolean fin() { return es(TokenType.EOF); }
 
-    public void match(TokenType esperado) throws ExcepcionSintactica {
+    public Token match(TokenType esperado) throws ExcepcionSintactica {
         if (!es(esperado)) throw new ExcepcionSintactica(actual, esperado.toString());
+        Token consumido = actual;
         avanzar();
+        return consumido;
     }
+
+    public TablaSimbolos getTablaSimbolos() { return tablaSimbolos; }
+    public EntradaClase getClaseActual() { return claseActual; }
+    public void setClaseActual(EntradaClase claseActual) { this.claseActual = claseActual; }
+    public EntradaMetodo getMetodoActual() { return metodoActual; }
+    public void setMetodoActual(EntradaMetodo metodoActual) { this.metodoActual = metodoActual; }
 
     private void avanzar() {
         actual = lexer.proximoToken();
