@@ -374,13 +374,145 @@ final class For implements NoTerminal {
     public void parse(ContextoSintactico c) {
         c.match(TokenType.kw_for);
         c.match(TokenType.openParenthesis);
-        new ExpresionOpcional().parse(c);
-        c.match(TokenType.semicolon);
-        new ExpresionOpcional().parse(c);
-        c.match(TokenType.semicolon);
-        new ExpresionOpcional().parse(c);
+        new CabeceraFor().parse(c);
         c.match(TokenType.closeParenthesis);
         new Sentencia().parse(c);
+    }
+}
+
+final class CabeceraFor implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (c.es(TokenType.identificadorDeClase))
+            new CabeceraForIdClase().parse(c);
+        else
+            new CabeceraForSinIdClase().parse(c);
+    }
+}
+
+final class CabeceraForIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        c.match(TokenType.identificadorDeClase);
+        new TrasIdClaseEnFor().parse(c);
+    }
+}
+
+final class TrasIdClaseEnFor implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (c.es(TokenType.period)) {
+            c.match(TokenType.period);
+            c.match(TokenType.identificador);
+            new ArgsActuales().parse(c);
+            new Referencia2().parse(c);
+            new ExpresionCompuesta2().parse(c);
+            new Expresion2().parse(c);
+            c.match(TokenType.semicolon);
+            new ExpresionOpcional().parse(c);
+            c.match(TokenType.semicolon);
+            new ExpresionOpcional().parse(c);
+            return;
+        }
+        new TipoGenericoOpcional().parse(c);
+        new DimensionesOpcionales().parse(c);
+        c.match(TokenType.identificador);
+        c.match(TokenType.twopoints);
+        new Expresion().parse(c);
+    }
+}
+
+final class CabeceraForSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (ContextoSintactico.cualquiera(c, TokenType.kw_boolean, TokenType.kw_char,
+                TokenType.kw_int, TokenType.IdentificadorDeParametroDeTipo)) {
+            new TipoBaseSinIdClase().parse(c);
+            new DimensionesOpcionales().parse(c);
+            c.match(TokenType.identificador);
+            c.match(TokenType.twopoints);
+            new Expresion().parse(c);
+            return;
+        }
+        new ExpresionOpcionalSinIdClase().parse(c);
+        c.match(TokenType.semicolon);
+        new ExpresionOpcional().parse(c);
+        c.match(TokenType.semicolon);
+        new ExpresionOpcional().parse(c);
+    }
+}
+
+final class TipoBaseSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (ContextoSintactico.cualquiera(c, TokenType.kw_boolean, TokenType.kw_char, TokenType.kw_int))
+            new TipoPrimitivo().parse(c);
+        else
+            c.match(TokenType.IdentificadorDeParametroDeTipo);
+    }
+}
+
+final class ExpresionOpcionalSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (!c.es(TokenType.semicolon))
+            new ExpresionSinIdClase().parse(c);
+    }
+}
+
+final class ExpresionSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        new ExpresionCompuestaSinIdClase().parse(c);
+        new Expresion2().parse(c);
+    }
+}
+
+final class ExpresionCompuestaSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        new ExpresionBasicaSinIdClase().parse(c);
+        new ExpresionCompuesta2().parse(c);
+    }
+}
+
+final class ExpresionBasicaSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (ContextoSintactico.cualquiera(c, TokenType.plus, TokenType.minus, TokenType.not))
+            new OperadorUnario().parse(c);
+        new OperandoSinIdClase().parse(c);
+    }
+}
+
+final class OperandoSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (ContextoSintactico.cualquiera(c, TokenType.kw_true, TokenType.kw_false,
+                TokenType.intLiteral, TokenType.charLiteral, TokenType.kw_null))
+            new Primitivo().parse(c);
+        else
+            new ReferenciaSinIdClase().parse(c);
+    }
+}
+
+final class ReferenciaSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        new PrimarioSinIdClase().parse(c);
+        new Referencia2().parse(c);
+    }
+}
+
+final class PrimarioSinIdClase implements NoTerminal {
+    public void parse(ContextoSintactico c) {
+        if (c.es(TokenType.kw_this)) {
+            c.match(TokenType.kw_this);
+            return;
+        }
+        if (c.es(TokenType.stringLiteral)) {
+            c.match(TokenType.stringLiteral);
+            return;
+        }
+        if (c.es(TokenType.kw_new)) {
+            c.match(TokenType.kw_new);
+            new Instanciacion().parse(c);
+            return;
+        }
+        if (c.es(TokenType.identificador)) {
+            new AccesoVarLlamadaMetodo().parse(c);
+            return;
+        }
+        new ExpresionParentizada().parse(c);
     }
 }
 
