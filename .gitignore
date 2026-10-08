@@ -16,3 +16,5 @@ build/
 
 # Kotlin plugin data
 .kotlin/
+
+LLM
