@@ -1,5 +1,0 @@
-///[SinErrores]
-class ConstructorSinVisibilidad {
-  ConstructorSinVisibilidad() {
-  }
-}

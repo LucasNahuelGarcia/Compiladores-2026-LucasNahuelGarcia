@@ -1,3 +1,0 @@
-///[SinErrores]
-class Raiz {
-}

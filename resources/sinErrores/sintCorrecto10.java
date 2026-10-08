@@ -1,3 +1,0 @@
-///[SinErrores]
-interface Caja<T> {
-}
