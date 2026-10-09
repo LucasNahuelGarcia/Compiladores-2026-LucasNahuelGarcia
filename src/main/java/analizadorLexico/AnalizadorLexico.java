@@ -418,6 +418,17 @@ public class AnalizadorLexico {
             return e_IdentificadorMetodoVariable();
         }
 
+        if (lexema.equals("non") && caracterActual == '-') {
+            consumir();
+            if (lexema.endsWith("non-") && caracterActual == 's') {
+                consumir();
+                while (Character.isAlphabetic(caracterActual))
+                    consumir();
+                if (lexema.equals("non-sealed"))
+                    return createToken(TokenType.kw_non_sealed);
+            }
+        }
+
         Token palabraReservada = getPalabraReservadaFromLexema();
         if (palabraReservada != null)
             return palabraReservada;

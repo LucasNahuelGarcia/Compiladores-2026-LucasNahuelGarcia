@@ -196,6 +196,7 @@ public class TablaSimbolos {
             return;
 
         estados.put(clase.getNombre(), EstadoVisita.VISITANDO);
+        validarModificadores(clase);
         TipoReferencia claseBase = clase.getClaseBase();
         if (claseBase != null) {
             EntradaClase padre = clases.get(claseBase.getNombreClase());
@@ -232,7 +233,56 @@ public class TablaSimbolos {
             validarArgumentoGenerico(interfaz, entradaInterfaz);
             validarJerarquia(entradaInterfaz, estados);
         }
+        validarPermisos(clase);
         estados.put(clase.getNombre(), EstadoVisita.VISITADA);
+    }
+
+    private void validarModificadores(EntradaClase clase) {
+        if (clase.isFinalClase() && (clase.isSealed() || clase.isNonSealed()))
+            throw new ExcepcionSemantica(clase.getToken(),
+                    "final no puede combinarse con sealed o non-sealed");
+        if (clase.isSealed() && clase.isNonSealed())
+            throw new ExcepcionSemantica(clase.getToken(),
+                    "sealed no puede combinarse con non-sealed");
+        if (clase.isNonSealed()) {
+            boolean ancestroSealed = false;
+            if (clase.getClaseBase() != null) {
+                EntradaClase padre = clases.get(clase.getClaseBase().getNombreClase());
+                ancestroSealed = padre != null && padre.isSealed();
+            }
+            for (TipoReferencia interfaz : clase.getInterfaces()) {
+                EntradaClase padre = clases.get(interfaz.getNombreClase());
+                ancestroSealed |= padre != null && padre.isSealed();
+            }
+            if (!ancestroSealed)
+                throw new ExcepcionSemantica(clase.getToken(),
+                        "non-sealed requiere un ancestro sealed");
+        }
+    }
+
+    private void validarPermisos(EntradaClase clase) {
+        if (clase.getPermisos().isEmpty()) {
+            if (clase.isSealed())
+                throw new ExcepcionSemantica(clase.getToken(),
+                        "una entidad sealed debe declarar permisos");
+            return;
+        }
+        if (!clase.isSealed())
+            throw new ExcepcionSemantica(clase.getPermisos().get(0),
+                    "permits solo puede usarse con sealed");
+        for (Token permiso : clase.getPermisos()) {
+            EntradaClase permitido = clases.get(permiso.getLexema());
+            if (permitido == null)
+                throw new ExcepcionSemantica(permiso,
+                        "el tipo permitido no fue declarado");
+            boolean heredaDirectamente = clase.getNombre().equals(
+                    permitido.getClaseBase() == null ? null : permitido.getClaseBase().getNombreClase());
+            for (TipoReferencia interfaz : permitido.getInterfaces())
+                heredaDirectamente |= clase.getNombre().equals(interfaz.getNombreClase());
+            if (!heredaDirectamente)
+                throw new ExcepcionSemantica(permiso,
+                        "el tipo permitido no hereda directamente de la entidad sealed");
+        }
     }
 
     private boolean contienePermiso(EntradaClase clase, String nombre) {
