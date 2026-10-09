@@ -48,8 +48,6 @@ final class Clase implements NoTerminal {
         parsePermisos(c, clase);
         c.match(TokenType.openBraces);
         new ListaMiembros().parse(c);
-        if (clase.getConstructores().isEmpty())
-            clase.agregarConstructor(new EntradaMetodo(tokenNombre, clase.getNombre(), null));
         c.match(TokenType.closeBraces);
         c.setMetodoActual(null);
         c.setClaseActual(null);

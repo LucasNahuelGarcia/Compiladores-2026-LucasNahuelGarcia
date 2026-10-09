@@ -28,8 +28,7 @@ public final class MainSemantico {
 			AnalizadorLexico analizadorLexico = new AnalizadorLexico(sourceManager);
 			// El parser construye la TS; estas llamadas son las tres etapas semanticas.
 			TablaSimbolos tablaSimbolos = new Inicial().parse(analizadorLexico);
-			tablaSimbolos.estaBienDeclarado();
-			tablaSimbolos.consolidar();
+			tablaSimbolos.chequearDeclaraciones();
 			// Esta linea es parte del contrato de salida y no debe modificarse.
 			System.out.println("[SinErrores]");
 		} catch (ExcepcionSemantica exception) {

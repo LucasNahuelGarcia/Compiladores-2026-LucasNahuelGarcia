@@ -216,7 +216,7 @@ public class EntradaClase {
             absorberMiembros(padre, sustituciones);
         for (TipoReferencia interfaz : interfaces) {
             EntradaClase entradaInterfaz = tablaSimbolos.getClase(interfaz.getNombreClase());
-            if (entradaInterfaz != null)
+            if (entradaInterfaz != null && this.interfaz)
                 absorberMiembros(entradaInterfaz, obtenerSustituciones(entradaInterfaz, interfaz));
         }
         estaConsolidada = true;
@@ -238,9 +238,14 @@ public class EntradaClase {
             Map<String, Tipo> sustituciones = obtenerSustituciones(entradaInterfaz, referenciaInterfaz);
             for (EntradaMetodo requerido : entradaInterfaz.metodos.values()) {
                 EntradaMetodo implementacion = metodos.get(requerido.getClaveFirma());
+                if (implementacion != null && implementacion.getToken() == requerido.getToken())
+                    implementacion = null;
                 if (implementacion == null && padre != null)
                     implementacion = padre.metodos.get(requerido.getClaveFirma());
+                if (implementacion != null && implementacion.getToken() == requerido.getToken())
+                    implementacion = null;
                 if (implementacion == null || implementacion.isEstatico()
+                    || nivelVisibilidad(implementacion.getVisibilidad()) < 2
                         || !mismaFirma(requerido, implementacion, sustituciones))
                     throw new ExcepcionSemantica(token,
                             "la clase '" + nombre + "' no implementa correctamente el metodo '"

@@ -131,6 +131,7 @@ public class TablaSimbolos {
 
     public void estaBienDeclarado() {
         agregarHerenciaPorDefecto();
+        inyectarConstructoresPorDefecto();
 
         Map<String, EstadoVisita> estados = new HashMap<>();
         for (EntradaClase clase : clases.values())
@@ -138,8 +139,40 @@ public class TablaSimbolos {
 
         for (EntradaClase clase : clases.values())
             clase.estaBienDeclarado(this);
+    }
+
+    public void chequearDeclaraciones() {
+        agregarHerenciaPorDefecto();
+        inyectarConstructoresPorDefecto();
+
+        Map<String, EstadoVisita> estados = new HashMap<>();
+        for (EntradaClase clase : clases.values())
+            validarJerarquia(clase, estados);
+
+        for (EntradaClase clase : clases.values())
+            clase.estaBienDeclarado(this);
+
+        for (EntradaClase clase : clases.values())
+            clase.consolidar(this);
+
         for (EntradaClase clase : clases.values())
             clase.validarContratosDeInterfaces(this);
+    }
+
+    private void inyectarConstructoresPorDefecto() {
+        for (EntradaClase clase : clases.values()) {
+            if (!clase.isInterfaz() && !esClasePredefinida(clase)
+                    && clase.getConstructores().isEmpty()) {
+                clase.agregarConstructor(new EntradaMetodo(
+                        clase.getToken(), clase.getNombre(), null, "public", false));
+            }
+        }
+    }
+
+    private boolean esClasePredefinida(EntradaClase clase) {
+        return clase.getNombre().equals("Object")
+                || clase.getNombre().equals("String")
+                || clase.getNombre().equals("System");
     }
 
     public void consolidar() {
