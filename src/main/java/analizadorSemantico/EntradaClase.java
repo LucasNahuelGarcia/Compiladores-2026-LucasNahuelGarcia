@@ -148,9 +148,9 @@ public class EntradaClase {
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
         if (claseBase != null)
-            claseBase.estaBienDeclarado(tablaSimbolos);
+            claseBase.estaBienDeclarado(tablaSimbolos, parametroGenerico);
         for (TipoReferencia interfaz : interfaces)
-            interfaz.estaBienDeclarado(tablaSimbolos);
+            interfaz.estaBienDeclarado(tablaSimbolos, parametroGenerico);
         for (EntradaAtributo atributo : atributos.values())
             atributo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
         for (EntradaMetodo metodo : metodos.values())
@@ -224,14 +224,28 @@ public class EntradaClase {
             EntradaMetodo metodoHijo = metodos.get(metodoPadre.getClaveFirma());
             if (metodoHijo == null) {
                 metodos.put(metodoPadre.getClaveFirma(), metodoPadre.copiar(sustituciones));
+            } else if (metodoPadre.getVisibilidad().equals("private")) {
+                continue;
             } else if (metodoPadre.isEstatico() || metodoHijo.isEstatico()) {
                 throw new ExcepcionSemantica(metodoHijo.getToken(),
                         "no se puede redefinir el metodo estatico '" + metodoHijo.getNombre() + "'");
+            } else if (nivelVisibilidad(metodoHijo.getVisibilidad())
+                    < nivelVisibilidad(metodoPadre.getVisibilidad())) {
+                throw new ExcepcionSemantica(metodoHijo.getToken(),
+                        "el metodo hijo no puede reducir la visibilidad de '" + metodoHijo.getNombre() + "'");
             } else if (!mismaFirma(metodoPadre, metodoHijo, sustituciones)) {
                 throw new ExcepcionSemantica(metodoHijo.getToken(),
                         "la redefinicion del metodo '" + metodoHijo.getNombre() + "' no coincide con su ancestro");
             }
         }
+    }
+
+    private int nivelVisibilidad(String visibilidad) {
+        if ("private".equals(visibilidad))
+            return 0;
+        if ("protected".equals(visibilidad))
+            return 1;
+        return 2;
     }
 
     private Map<String, Tipo> obtenerSustituciones(EntradaClase padre, TipoReferencia relacion) {
@@ -265,10 +279,14 @@ public class EntradaClase {
             return ((TipoPrimitivo) primero).getPrimitivo() == ((TipoPrimitivo) segundo).getPrimitivo();
         if (primero instanceof TipoReferencia && segundo instanceof TipoReferencia) {
             TipoReferencia referenciaPrimera = (TipoReferencia) primero;
+            TipoReferencia referenciaSegunda = (TipoReferencia) segundo;
             Tipo sustituto = sustituciones.get(referenciaPrimera.getNombreClase());
             if (sustituto != null)
                 return mismoTipo(sustituto, segundo, sustituciones);
-            return referenciaPrimera.getNombreClase().equals(((TipoReferencia) segundo).getNombreClase());
+            if (!referenciaPrimera.getNombreClase().equals(referenciaSegunda.getNombreClase()))
+                return false;
+            return mismoTipo(referenciaPrimera.getArgumentoGenerico(),
+                    referenciaSegunda.getArgumentoGenerico(), sustituciones);
         }
         return false;
     }

@@ -14,6 +14,7 @@ public final class ContextoSintactico {
     private Token actual;
     private EntradaClase claseActual;
     private EntradaMetodo metodoActual;
+    private String visibilidadActual = "public";
 
     public ContextoSintactico(AnalizadorLexico lexer) {
         this(lexer, new TablaSimbolos());
@@ -41,6 +42,8 @@ public final class ContextoSintactico {
     public void setClaseActual(EntradaClase claseActual) { this.claseActual = claseActual; }
     public EntradaMetodo getMetodoActual() { return metodoActual; }
     public void setMetodoActual(EntradaMetodo metodoActual) { this.metodoActual = metodoActual; }
+    public String getVisibilidadActual() { return visibilidadActual; }
+    public void setVisibilidadActual(String visibilidadActual) { this.visibilidadActual = visibilidadActual; }
 
     private void avanzar() {
         actual = lexer.proximoToken();

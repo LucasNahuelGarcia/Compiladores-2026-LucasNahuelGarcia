@@ -138,12 +138,16 @@ final class Miembro implements NoTerminal {
 
 final class VisibilidadOpcional implements NoTerminal {
     public void parse(ContextoSintactico c) {
-        if (c.es(TokenType.kw_public))
+        c.setVisibilidadActual("public");
+        if (c.es(TokenType.kw_public)) {
             c.match(TokenType.kw_public);
-        else if (c.es(TokenType.kw_private))
+        } else if (c.es(TokenType.kw_private)) {
             c.match(TokenType.kw_private);
-        else if (c.es(TokenType.kw_protected))
+            c.setVisibilidadActual("private");
+        } else if (c.es(TokenType.kw_protected)) {
             c.match(TokenType.kw_protected);
+            c.setVisibilidadActual("protected");
+        }
     }
 }
 
@@ -171,8 +175,18 @@ final class MiembroSinVisibilidad implements NoTerminal {
 
     private void registrarMetodo(ContextoSintactico c, analizadorSemantico.Tipo tipoRetorno, boolean estatico) {
         Token tokenNombre = c.match(TokenType.identificador);
+        if (estatico && c.es(TokenType.semicolon)) {
+            if (tipoRetorno instanceof analizadorSemantico.TipoPrimitivo
+                    && ((analizadorSemantico.TipoPrimitivo) tipoRetorno).getPrimitivo()
+                    == analizadorSemantico.TipoPrimitivo.Primitivo.VOID)
+                throw new ExcepcionSintactica(tokenNombre, "tipo de atributo");
+            c.match(TokenType.semicolon);
+                c.getClaseActual().agregarAtributo(new EntradaAtributo(
+                    tokenNombre, tokenNombre.getLexema(), tipoRetorno, c.getVisibilidadActual(), true));
+            return;
+        }
         EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipoRetorno,
-                "public", estatico);
+            c.getVisibilidadActual(), estatico);
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
         c.getClaseActual().agregarMetodo(metodo);
@@ -183,7 +197,12 @@ final class MiembroSinVisibilidad implements NoTerminal {
     private void registrarDeclaracion(ContextoSintactico c, analizadorSemantico.Tipo tipo, boolean puedeSerConstructor) {
         if (puedeSerConstructor && c.es(TokenType.openParenthesis)) {
             EntradaClase clase = c.getClaseActual();
-            EntradaMetodo constructor = new EntradaMetodo(clase.getToken(), clase.getNombre(), null);
+            if (tipo instanceof analizadorSemantico.TipoReferencia
+                && !clase.getNombre().equals(tipo.getNombre()))
+            throw new analizadorSemantico.ExcepcionSemantica(tipo.getToken(),
+                "el constructor debe llamarse '" + clase.getNombre() + "'");
+            EntradaMetodo constructor = new EntradaMetodo(clase.getToken(), clase.getNombre(), null,
+                c.getVisibilidadActual(), false);
             c.setMetodoActual(constructor);
             new ArgsFormales().parse(c);
             clase.agregarConstructor(constructor);
@@ -199,7 +218,8 @@ final class MiembroSinVisibilidad implements NoTerminal {
             return;
         }
 
-        EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipo);
+        EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipo,
+            c.getVisibilidadActual(), false);
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
         c.getClaseActual().agregarMetodo(metodo);

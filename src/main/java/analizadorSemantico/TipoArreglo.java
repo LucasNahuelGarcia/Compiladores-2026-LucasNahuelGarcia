@@ -32,4 +32,9 @@ public class TipoArreglo extends Tipo {
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
         tipoElemento.estaBienDeclarado(tablaSimbolos, parametroGenerico);
     }
+
+    @Override
+    public boolean usaParametroGenerico(String parametroGenerico) {
+        return tipoElemento.usaParametroGenerico(parametroGenerico);
+    }
 }

@@ -169,6 +169,11 @@ public class TablaSimbolos {
             if (padre == null)
                 throw new ExcepcionSemantica(claseBase.getToken(),
                         "la clase base '" + claseBase.getNombreClase() + "' no fue declarada");
+            if ((!clase.isInterfaz() && padre.isInterfaz())
+                    || (clase.isInterfaz() && !padre.isInterfaz()))
+                throw new ExcepcionSemantica(claseBase.getToken(),
+                        "la categoria del ancestro no es compatible");
+            validarArgumentoGenerico(claseBase, padre);
             validarJerarquia(padre, estados);
         }
         for (TipoReferencia interfaz : clase.getInterfaces()) {
@@ -176,9 +181,24 @@ public class TablaSimbolos {
             if (entradaInterfaz == null)
                 throw new ExcepcionSemantica(interfaz.getToken(),
                         "la interfaz '" + interfaz.getNombreClase() + "' no fue declarada");
+            if (!entradaInterfaz.isInterfaz())
+                throw new ExcepcionSemantica(interfaz.getToken(),
+                        "una clase solo puede implementar interfaces");
+            validarArgumentoGenerico(interfaz, entradaInterfaz);
             validarJerarquia(entradaInterfaz, estados);
         }
         estados.put(clase.getNombre(), EstadoVisita.VISITADA);
+    }
+
+    private void validarArgumentoGenerico(TipoReferencia relacion, EntradaClase destino) {
+        if (relacion.getArgumentoGenerico() != null) {
+            if (relacion.getArgumentoGenerico() instanceof TipoPrimitivo)
+                throw new ExcepcionSemantica(relacion.getArgumentoGenerico().getToken(),
+                        "los argumentos genericos deben ser tipos referencia");
+            if (destino.getParametroGenerico() == null)
+                throw new ExcepcionSemantica(relacion.getToken(),
+                        "la clase '" + destino.getNombre() + "' no es parametrizada");
+        }
     }
 
     private enum EstadoVisita {

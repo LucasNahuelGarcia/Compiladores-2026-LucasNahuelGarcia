@@ -27,4 +27,8 @@ public abstract class Tipo {
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
     }
+
+    public boolean usaParametroGenerico(String parametroGenerico) {
+        return false;
+    }
 }

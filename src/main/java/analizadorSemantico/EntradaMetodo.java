@@ -96,6 +96,8 @@ public class EntradaMetodo {
     }
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+        if (estatico && tipoRetorno != null && tipoRetorno.usaParametroGenerico(parametroGenerico))
+            throw new ExcepcionSemantica(tipoRetorno.getToken(), "el parametro generico no puede usarse en un metodo estatico");
         if (tipoRetorno != null)
             tipoRetorno.estaBienDeclarado(tablaSimbolos, parametroGenerico);
         for (EntradaParametro parametro : parametros.values())

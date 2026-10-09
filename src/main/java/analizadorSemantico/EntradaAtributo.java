@@ -69,6 +69,8 @@ public class EntradaAtributo {
         }
 
         public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+            if (estatico && tipo != null && tipo.usaParametroGenerico(parametroGenerico))
+                throw new ExcepcionSemantica(tipo.getToken(), "el parametro generico no puede usarse en un atributo estatico");
         if (tipo != null)
             tipo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
     }

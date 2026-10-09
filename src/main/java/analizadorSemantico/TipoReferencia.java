@@ -50,4 +50,10 @@ public class TipoReferencia extends Tipo {
         if (argumentoGenerico != null)
             argumentoGenerico.estaBienDeclarado(tablaSimbolos, parametroGenerico);
     }
+
+    @Override
+    public boolean usaParametroGenerico(String parametroGenerico) {
+        return nombreClase.equals(parametroGenerico)
+                || argumentoGenerico != null && argumentoGenerico.usaParametroGenerico(parametroGenerico);
+    }
 }
