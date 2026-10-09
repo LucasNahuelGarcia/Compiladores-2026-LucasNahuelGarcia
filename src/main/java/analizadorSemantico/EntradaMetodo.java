@@ -97,11 +97,16 @@ public class EntradaMetodo {
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
         if (estatico && tipoRetorno != null && tipoRetorno.usaParametroGenerico(parametroGenerico))
-            throw new ExcepcionSemantica(tipoRetorno.getToken(), "el parametro generico no puede usarse en un metodo estatico");
+            throw new ExcepcionSemantica(tipoRetorno.tokenDelParametro(parametroGenerico),
+                    "el parametro generico no puede usarse en un metodo estatico");
         if (tipoRetorno != null)
             tipoRetorno.estaBienDeclarado(tablaSimbolos, parametroGenerico);
-        for (EntradaParametro parametro : parametros.values())
+        for (EntradaParametro parametro : parametros.values()) {
+            if (estatico && parametro.getTipo().usaParametroGenerico(parametroGenerico))
+                throw new ExcepcionSemantica(parametro.getTipo().tokenDelParametro(parametroGenerico),
+                        "el parametro generico no puede usarse en un metodo estatico");
             parametro.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+        }
     }
 
     EntradaMetodo copiar(Map<String, Tipo> sustituciones) {

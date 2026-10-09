@@ -44,9 +44,13 @@ public class TipoReferencia extends Tipo {
 
     @Override
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
-        if (!nombreClase.equals(parametroGenerico) && tablaSimbolos.getClase(nombreClase) == null)
+        EntradaClase clase = tablaSimbolos.getClase(nombreClase);
+        if (!nombreClase.equals(parametroGenerico) && clase == null)
             throw new ExcepcionSemantica(getToken(),
                     "el tipo '" + nombreClase + "' no fue declarado");
+        if (argumentoGenerico != null && clase != null && clase.getParametroGenerico() == null)
+            throw new ExcepcionSemantica(getToken(),
+                    "la clase '" + nombreClase + "' no es parametrizada");
         if (argumentoGenerico != null)
             argumentoGenerico.estaBienDeclarado(tablaSimbolos, parametroGenerico);
     }
@@ -55,5 +59,12 @@ public class TipoReferencia extends Tipo {
     public boolean usaParametroGenerico(String parametroGenerico) {
         return nombreClase.equals(parametroGenerico)
                 || argumentoGenerico != null && argumentoGenerico.usaParametroGenerico(parametroGenerico);
+    }
+
+    @Override
+    public Token tokenDelParametro(String parametroGenerico) {
+        if (nombreClase.equals(parametroGenerico))
+            return getToken();
+        return argumentoGenerico == null ? getToken() : argumentoGenerico.tokenDelParametro(parametroGenerico);
     }
 }

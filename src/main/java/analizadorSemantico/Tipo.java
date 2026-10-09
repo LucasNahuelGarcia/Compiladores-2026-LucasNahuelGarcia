@@ -31,4 +31,8 @@ public abstract class Tipo {
     public boolean usaParametroGenerico(String parametroGenerico) {
         return false;
     }
+
+    public Token tokenDelParametro(String parametroGenerico) {
+        return getToken();
+    }
 }

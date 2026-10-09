@@ -337,7 +337,13 @@ final class Tipo implements NoTerminal {
     private analizadorSemantico.Tipo parseTipoBaseGenerico(ContextoSintactico c) {
         if (c.es(TokenType.identificadorDeClase)) {
             Token token = c.match(TokenType.identificadorDeClase);
-            return new analizadorSemantico.TipoReferencia(token, token.getLexema());
+            analizadorSemantico.TipoReferencia tipo = new analizadorSemantico.TipoReferencia(token, token.getLexema());
+            if (c.es(TokenType.lessThan)) {
+                c.match(TokenType.lessThan);
+                tipo.setArgumentoGenerico(parseTipoBaseGenerico(c));
+                c.match(TokenType.greaterThan);
+            }
+            return tipo;
         }
         Token token = c.match(TokenType.IdentificadorDeParametroDeTipo);
         return new analizadorSemantico.TipoReferencia(token, token.getLexema());

@@ -37,4 +37,9 @@ public class TipoArreglo extends Tipo {
     public boolean usaParametroGenerico(String parametroGenerico) {
         return tipoElemento.usaParametroGenerico(parametroGenerico);
     }
+
+    @Override
+    public Token tokenDelParametro(String parametroGenerico) {
+        return tipoElemento.tokenDelParametro(parametroGenerico);
+    }
 }
