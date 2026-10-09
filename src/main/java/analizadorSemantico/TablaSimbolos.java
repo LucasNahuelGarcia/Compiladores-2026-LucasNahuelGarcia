@@ -7,12 +7,16 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TablaSimbolos {
     private Map<String, EntradaClase> clases;
+    private List<ExcepcionSemantica> errores;
 
     public TablaSimbolos() {
         clases = new LinkedHashMap<>();
+        errores = new ArrayList<>();
         inicializarEntornoPredefinido();
     }
 
@@ -111,10 +115,19 @@ public class TablaSimbolos {
     }
 
     public void agregarClase(EntradaClase clase) {
-        if (clases.containsKey(clase.getNombre()))
-            throw new ExcepcionSemantica(clase.getToken(),
-                    "la clase o interfaz '" + clase.getNombre() + "' ya fue declarada");
+        if (clases.containsKey(clase.getNombre())) {
+            clases.remove(clase.getNombre());
+            registrarError(new ExcepcionSemantica(clase.getToken(),
+                    "la clase o interfaz '" + clase.getNombre() + "' ya fue declarada"));
+            return;
+        }
         clases.put(clase.getNombre(), clase);
+    }
+
+    public void registrarError(ExcepcionSemantica error) { errores.add(error); }
+
+    public List<ExcepcionSemantica> getErrores() {
+        return Collections.unmodifiableList(errores);
     }
 
     public EntradaClase getClase(String nombre) {
@@ -145,18 +158,42 @@ public class TablaSimbolos {
         agregarHerenciaPorDefecto();
         inyectarConstructoresPorDefecto();
 
+        int erroresAntesDeJerarquia = errores.size();
         Map<String, EstadoVisita> estados = new HashMap<>();
-        for (EntradaClase clase : clases.values())
-            validarJerarquia(clase, estados);
+        for (EntradaClase clase : new ArrayList<>(clases.values())) {
+            try {
+                validarJerarquia(clase, estados);
+            } catch (ExcepcionSemantica error) {
+                registrarError(error);
+            }
+        }
 
-        for (EntradaClase clase : clases.values())
-            clase.estaBienDeclarado(this);
+        for (EntradaClase clase : new ArrayList<>(clases.values())) {
+            try {
+                clase.estaBienDeclarado(this);
+            } catch (ExcepcionSemantica error) {
+                registrarError(error);
+            }
+        }
 
-        for (EntradaClase clase : clases.values())
-            clase.consolidar(this);
+        if (errores.size() > erroresAntesDeJerarquia)
+            return;
 
-        for (EntradaClase clase : clases.values())
-            clase.validarContratosDeInterfaces(this);
+        for (EntradaClase clase : new ArrayList<>(clases.values())) {
+            try {
+                clase.consolidar(this);
+            } catch (ExcepcionSemantica error) {
+                registrarError(error);
+            }
+        }
+
+        for (EntradaClase clase : new ArrayList<>(clases.values())) {
+            try {
+                clase.validarContratosDeInterfaces(this);
+            } catch (ExcepcionSemantica error) {
+                registrarError(error);
+            }
+        }
     }
 
     private void inyectarConstructoresPorDefecto() {

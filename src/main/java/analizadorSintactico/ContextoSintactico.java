@@ -66,6 +66,9 @@ public final class ContextoSintactico {
     public void setParametroGenericoMetodo(String parametroGenericoMetodo) { this.parametroGenericoMetodo = parametroGenericoMetodo; }
     public Map<String, List<Tipo>> getParametrosGenericosMetodo() { return parametrosGenericosMetodo; }
     public void limpiarParametrosGenericosMetodo() { parametrosGenericosMetodo.clear(); parametroGenericoMetodo = null; }
+    public void registrarError(analizadorSemantico.ExcepcionSemantica error) {
+        tablaSimbolos.registrarError(error);
+    }
 
     private void avanzar() {
         actual = lexer.proximoToken();

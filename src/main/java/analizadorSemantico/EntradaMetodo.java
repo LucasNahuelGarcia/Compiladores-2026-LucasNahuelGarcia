@@ -20,6 +20,7 @@ public class EntradaMetodo {
     private String parametroGenerico;
     private Map<String, List<Tipo>> parametrosGenericos;
     private Map<String, EntradaParametro> parametros;
+    private boolean invalido;
 
     public EntradaMetodo(Token token, String nombre, Tipo tipoRetorno) {
         this(token, nombre, tipoRetorno, "public", false);
@@ -36,11 +37,16 @@ public class EntradaMetodo {
     }
 
     public void agregarParametro(EntradaParametro parametro) {
-        if (parametros.containsKey(parametro.getNombre()))
+        if (parametros.containsKey(parametro.getNombre())) {
+            parametros.remove(parametro.getNombre());
+            invalido = true;
             throw new ExcepcionSemantica(parametro.getToken(),
                     "el parametro '" + parametro.getNombre() + "' ya fue declarado");
+        }
         parametros.put(parametro.getNombre(), parametro);
     }
+
+    public boolean isInvalido() { return invalido; }
 
     public String getClaveFirma() {
         return nombre + "/" + parametros.size();

@@ -64,25 +64,35 @@ public class EntradaClase {
     public void agregarPermiso(Token permiso) { permisos.add(permiso); }
 
     public void agregarAtributo(EntradaAtributo atributo) {
-        if (atributos.containsKey(atributo.getNombre()))
+        if (atributos.containsKey(atributo.getNombre())) {
+            atributos.remove(atributo.getNombre());
             throw new ExcepcionSemantica(atributo.getToken(),
                     "el atributo '" + atributo.getNombre() + "' ya fue declarado en la clase '" + nombre + "'");
+        }
         atributos.put(atributo.getNombre(), atributo);
     }
 
     public void agregarMetodo(EntradaMetodo metodo) {
-        if (metodos.containsKey(metodo.getClaveFirma()))
+        if (metodo.isInvalido())
+            return;
+        if (metodos.containsKey(metodo.getClaveFirma())) {
+            metodos.remove(metodo.getClaveFirma());
             throw new ExcepcionSemantica(metodo.getToken(),
                     "el metodo '" + metodo.getNombre() + "' con aridad "
                             + metodo.getParametros().size() + " ya fue declarado en la clase '" + nombre + "'");
+                    }
         metodos.put(metodo.getClaveFirma(), metodo);
     }
 
     public void agregarConstructor(EntradaMetodo constructor) {
-        if (constructores.containsKey(constructor.getClaveConstructor()))
+        if (constructor.isInvalido())
+            return;
+        if (constructores.containsKey(constructor.getClaveConstructor())) {
+            constructores.remove(constructor.getClaveConstructor());
             throw new ExcepcionSemantica(constructor.getToken(),
                     "el constructor '" + constructor.getNombre() + "' con aridad "
                             + constructor.getParametros().size() + " ya fue declarado en la clase '" + nombre + "'");
+                    }
         constructores.put(constructor.getClaveConstructor(), constructor);
     }
 

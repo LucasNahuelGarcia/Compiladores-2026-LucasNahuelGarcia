@@ -23,7 +23,7 @@ public abstract class Tipo {
     public abstract String getNombre();
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
-        estaBienDeclarado(tablaSimbolos, null);
+        estaBienDeclarado(tablaSimbolos, (String) null);
     }
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {

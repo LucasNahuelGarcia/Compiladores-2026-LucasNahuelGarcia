@@ -279,7 +279,11 @@ final class MiembroSinVisibilidad implements NoTerminal {
         metodo.setFinalMethod(c.isMetodoFinal());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
-        c.getClaseActual().agregarMetodo(metodo);
+        try {
+            c.getClaseActual().agregarMetodo(metodo);
+        } catch (analizadorSemantico.ExcepcionSemantica error) {
+            c.registrarError(error);
+        }
         new Bloque().parse(c);
         c.setMetodoActual(null);
         c.limpiarParametrosGenericosMetodo();
@@ -296,7 +300,11 @@ final class MiembroSinVisibilidad implements NoTerminal {
                 c.getVisibilidadActual(), false);
             c.setMetodoActual(constructor);
             new ArgsFormales().parse(c);
-            clase.agregarConstructor(constructor);
+            try {
+                clase.agregarConstructor(constructor);
+            } catch (analizadorSemantico.ExcepcionSemantica error) {
+                c.registrarError(error);
+            }
             new Bloque().parse(c);
             c.setMetodoActual(null);
             return;
@@ -305,7 +313,11 @@ final class MiembroSinVisibilidad implements NoTerminal {
         Token tokenNombre = c.match(TokenType.identificador);
         if (c.es(TokenType.semicolon)) {
             c.match(TokenType.semicolon);
-            c.getClaseActual().agregarAtributo(new EntradaAtributo(tokenNombre, tokenNombre.getLexema(), tipo));
+            try {
+                c.getClaseActual().agregarAtributo(new EntradaAtributo(tokenNombre, tokenNombre.getLexema(), tipo));
+            } catch (analizadorSemantico.ExcepcionSemantica error) {
+                c.registrarError(error);
+            }
             return;
         }
 
@@ -314,7 +326,11 @@ final class MiembroSinVisibilidad implements NoTerminal {
         metodo.setFinalMethod(c.isMetodoFinal());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
-        c.getClaseActual().agregarMetodo(metodo);
+        try {
+            c.getClaseActual().agregarMetodo(metodo);
+        } catch (analizadorSemantico.ExcepcionSemantica error) {
+            c.registrarError(error);
+        }
         new Bloque().parse(c);
         c.setMetodoActual(null);
     }
@@ -371,7 +387,11 @@ final class MetodoInterfaz implements NoTerminal {
             metodo.agregarParametroGenerico(entrada.getKey(), entrada.getValue());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
-        c.getClaseActual().agregarMetodo(metodo);
+        try {
+            c.getClaseActual().agregarMetodo(metodo);
+        } catch (analizadorSemantico.ExcepcionSemantica error) {
+            c.registrarError(error);
+        }
         c.setMetodoActual(null);
         c.limpiarParametrosGenericosMetodo();
         c.match(TokenType.semicolon);
@@ -546,8 +566,13 @@ final class ArgFormal implements NoTerminal {
     public void parse(ContextoSintactico c) {
         analizadorSemantico.Tipo tipo = new Tipo().parseTipo(c);
         Token tokenNombre = c.match(TokenType.identificador);
-        if (c.getMetodoActual() != null)
-            c.getMetodoActual().agregarParametro(new EntradaParametro(tokenNombre, tokenNombre.getLexema(), tipo));
+        if (c.getMetodoActual() != null) {
+            try {
+                c.getMetodoActual().agregarParametro(new EntradaParametro(tokenNombre, tokenNombre.getLexema(), tipo));
+            } catch (analizadorSemantico.ExcepcionSemantica error) {
+                c.registrarError(error);
+            }
+        }
     }
 }
 

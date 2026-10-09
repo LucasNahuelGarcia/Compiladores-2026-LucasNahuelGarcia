@@ -26,7 +26,7 @@ public class TipoArreglo extends Tipo {
 
     @Override
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
-        estaBienDeclarado(tablaSimbolos, null);
+        estaBienDeclarado(tablaSimbolos, (String) null);
     }
 
     @Override

@@ -29,13 +29,15 @@ public final class MainSemantico {
 			// El parser construye la TS; estas llamadas son las tres etapas semanticas.
 			TablaSimbolos tablaSimbolos = new Inicial().parse(analizadorLexico);
 			tablaSimbolos.chequearDeclaraciones();
+			if (!tablaSimbolos.getErrores().isEmpty()) {
+				for (ExcepcionSemantica error : tablaSimbolos.getErrores())
+					imprimirError(error);
+				return;
+			}
 			// Esta linea es parte del contrato de salida y no debe modificarse.
 			System.out.println("[SinErrores]");
 		} catch (ExcepcionSemantica exception) {
-			System.out.println(exception.getMessage());
-			// Debe ser exactamente la ultima linea del reporte semantico.
-			System.out.println("[Error:" + exception.getToken().getLexema()
-					+ "|" + exception.getToken().getNroLinea() + "]");
+			imprimirError(exception);
 		} catch (ExcepcionLexica | ExcepcionSintactica exception) {
 			System.out.println(exception.getMessage());
 		} catch (IOException exception) {
@@ -46,5 +48,11 @@ public final class MainSemantico {
 			} catch (IOException exception) {
 			}
 		}
+	}
+
+	private static void imprimirError(ExcepcionSemantica exception) {
+		System.out.println(exception.getMessage());
+		System.out.println("[Error:" + exception.getToken().getLexema()
+				+ "|" + exception.getToken().getNroLinea() + "]");
 	}
 }
