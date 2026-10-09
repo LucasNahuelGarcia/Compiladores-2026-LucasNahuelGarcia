@@ -437,6 +437,14 @@ public class AnalizadorLexico {
                 return createToken(TokenType.kw_implements);
             case "static":
                 return createToken(TokenType.kw_static);
+            case "final":
+                return createToken(TokenType.kw_final);
+            case "sealed":
+                return createToken(TokenType.kw_sealed);
+            case "non-sealed":
+                return createToken(TokenType.kw_non_sealed);
+            case "permits":
+                return createToken(TokenType.kw_permits);
             case "boolean":
                 return createToken(TokenType.kw_boolean);
             case "char":

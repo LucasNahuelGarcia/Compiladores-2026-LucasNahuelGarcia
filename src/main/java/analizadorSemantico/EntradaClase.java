@@ -21,6 +21,10 @@ public class EntradaClase {
     private boolean estaConsolidada;
     private List<TipoReferencia> interfaces;
     private boolean interfaz;
+    private boolean finalClase;
+    private boolean sealed;
+    private boolean nonSealed;
+    private List<Token> permisos;
 
     public EntradaClase(Token token, String nombre) {
         this.token = Objects.requireNonNull(token, "El token de la clase no puede ser null");
@@ -30,6 +34,7 @@ public class EntradaClase {
         this.constructores = new LinkedHashMap<>();
         this.estaConsolidada = false;
         this.interfaces = new ArrayList<>();
+        this.permisos = new ArrayList<>();
     }
 
     public EntradaClase(Token token) {
@@ -48,6 +53,15 @@ public class EntradaClase {
     public void setInterfaz(boolean interfaz) {
         this.interfaz = interfaz;
     }
+
+    public boolean isFinalClase() { return finalClase; }
+    public void setFinalClase(boolean finalClase) { this.finalClase = finalClase; }
+    public boolean isSealed() { return sealed; }
+    public void setSealed(boolean sealed) { this.sealed = sealed; }
+    public boolean isNonSealed() { return nonSealed; }
+    public void setNonSealed(boolean nonSealed) { this.nonSealed = nonSealed; }
+    public List<Token> getPermisos() { return Collections.unmodifiableList(permisos); }
+    public void agregarPermiso(Token permiso) { permisos.add(permiso); }
 
     public void agregarAtributo(EntradaAtributo atributo) {
         if (atributos.containsKey(atributo.getNombre()))
@@ -147,6 +161,7 @@ public class EntradaClase {
     }
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos) {
+        chequearCircularidad(tablaSimbolos, new ArrayList<>());
         if (claseBase != null)
             claseBase.estaBienDeclarado(tablaSimbolos, parametroGenerico);
         for (TipoReferencia interfaz : interfaces)
@@ -157,6 +172,28 @@ public class EntradaClase {
             metodo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
         for (EntradaMetodo constructor : constructores.values())
             constructor.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+    }
+
+    private void chequearCircularidad(TablaSimbolos tablaSimbolos, List<String> rutaActual) {
+        if (rutaActual.contains(nombre))
+            throw new ExcepcionSemantica(token,
+                    "herencia circular detectada: la entidad '" + nombre + "' esta en un ciclo de herencia");
+
+        rutaActual.add(nombre);
+
+        if (claseBase != null) {
+            EntradaClase padre = tablaSimbolos.getClase(claseBase.getNombreClase());
+            if (padre != null)
+                padre.chequearCircularidad(tablaSimbolos, rutaActual);
+        }
+
+        for (TipoReferencia referenciaInterfaz : interfaces) {
+            EntradaClase interfaz = tablaSimbolos.getClase(referenciaInterfaz.getNombreClase());
+            if (interfaz != null)
+                interfaz.chequearCircularidad(tablaSimbolos, rutaActual);
+        }
+
+        rutaActual.remove(nombre);
     }
 
     public void consolidar(TablaSimbolos tablaSimbolos) {
@@ -229,6 +266,9 @@ public class EntradaClase {
             } else if (metodoPadre.isEstatico() || metodoHijo.isEstatico()) {
                 throw new ExcepcionSemantica(metodoHijo.getToken(),
                         "no se puede redefinir el metodo estatico '" + metodoHijo.getNombre() + "'");
+            } else if (metodoPadre.isFinalMethod()) {
+                throw new ExcepcionSemantica(metodoHijo.getToken(),
+                        "no se puede redefinir el metodo final '" + metodoHijo.getNombre() + "'");
             } else if (nivelVisibilidad(metodoHijo.getVisibilidad())
                     < nivelVisibilidad(metodoPadre.getVisibilidad())) {
                 throw new ExcepcionSemantica(metodoHijo.getToken(),

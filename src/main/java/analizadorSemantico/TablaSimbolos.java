@@ -173,9 +173,18 @@ public class TablaSimbolos {
                     || (clase.isInterfaz() && !padre.isInterfaz()))
                 throw new ExcepcionSemantica(claseBase.getToken(),
                         "la categoria del ancestro no es compatible");
+            if (padre.isFinalClase())
+                throw new ExcepcionSemantica(clase.getToken(),
+                        "no se puede heredar de la clase final '" + padre.getNombre() + "'");
+            if (padre.isSealed() && !contienePermiso(padre, clase.getNombre()))
+                throw new ExcepcionSemantica(clase.getToken(),
+                        "la clase no esta permitida por el ancestro sealed");
             validarArgumentoGenerico(claseBase, padre);
             validarJerarquia(padre, estados);
         }
+        if (clase.isSealed() && clase.getPermisos().isEmpty())
+            throw new ExcepcionSemantica(clase.getToken(),
+                "una clase sealed debe declarar permisos");
         for (TipoReferencia interfaz : clase.getInterfaces()) {
             EntradaClase entradaInterfaz = clases.get(interfaz.getNombreClase());
             if (entradaInterfaz == null)
@@ -183,11 +192,21 @@ public class TablaSimbolos {
                         "la interfaz '" + interfaz.getNombreClase() + "' no fue declarada");
             if (!entradaInterfaz.isInterfaz())
                 throw new ExcepcionSemantica(interfaz.getToken(),
-                        "una clase solo puede implementar interfaces");
+                        "la relacion de interfaz requiere un tipo interfaz");
+            if (entradaInterfaz.isSealed() && !contienePermiso(entradaInterfaz, clase.getNombre()))
+                throw new ExcepcionSemantica(clase.getToken(),
+                        "la clase no esta permitida por la interfaz sealed");
             validarArgumentoGenerico(interfaz, entradaInterfaz);
             validarJerarquia(entradaInterfaz, estados);
         }
         estados.put(clase.getNombre(), EstadoVisita.VISITADA);
+    }
+
+    private boolean contienePermiso(EntradaClase clase, String nombre) {
+        for (Token permiso : clase.getPermisos())
+            if (permiso.getLexema().equals(nombre))
+                return true;
+        return false;
     }
 
     private void validarArgumentoGenerico(TipoReferencia relacion, EntradaClase destino) {

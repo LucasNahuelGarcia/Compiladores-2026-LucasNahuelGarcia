@@ -13,6 +13,7 @@ public class EntradaMetodo {
     private Tipo tipoRetorno;
     private String visibilidad;
     private boolean estatico;
+    private boolean finalMethod;
     private Map<String, EntradaParametro> parametros;
 
     public EntradaMetodo(Token token, String nombre, Tipo tipoRetorno) {
@@ -79,6 +80,14 @@ public class EntradaMetodo {
         return estatico;
     }
 
+    public boolean isFinalMethod() {
+        return finalMethod;
+    }
+
+    public void setFinalMethod(boolean finalMethod) {
+        this.finalMethod = finalMethod;
+    }
+
     public void setEstatico(boolean estatico) {
         this.estatico = estatico;
     }
@@ -112,6 +121,7 @@ public class EntradaMetodo {
     EntradaMetodo copiar(Map<String, Tipo> sustituciones) {
         EntradaMetodo copia = new EntradaMetodo(token, nombre,
                 copiarTipo(tipoRetorno, sustituciones), visibilidad, estatico);
+        copia.finalMethod = finalMethod;
         for (EntradaParametro parametro : parametros.values())
             copia.agregarParametro(new EntradaParametro(
                     parametro.getToken(), parametro.getNombre(),

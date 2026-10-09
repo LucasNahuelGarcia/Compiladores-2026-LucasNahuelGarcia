@@ -10,12 +10,25 @@ import analizadorSemantico.EntradaParametro;
 final class ListaClases implements NoTerminal {
     public void parse(ContextoSintactico c) {
         while (!c.fin()) {
+            parseModificadores(c);
             if (c.es(TokenType.kw_class))
                 new Clase().parse(c);
             else if (c.es(TokenType.kw_interface))
                 new Interfaz().parse(c);
             else
                 throw new ExcepcionSintactica(c.actual(), "class o interface");
+        }
+    }
+
+    private void parseModificadores(ContextoSintactico c) {
+        c.setTipoFinal(false);
+        c.setTipoSealed(false);
+        c.setTipoNonSealed(false);
+        while (ContextoSintactico.cualquiera(c, TokenType.kw_final, TokenType.kw_sealed,
+                TokenType.kw_non_sealed)) {
+            if (c.es(TokenType.kw_final)) { c.match(TokenType.kw_final); c.setTipoFinal(true); }
+            else if (c.es(TokenType.kw_sealed)) { c.match(TokenType.kw_sealed); c.setTipoSealed(true); }
+            else { c.match(TokenType.kw_non_sealed); c.setTipoNonSealed(true); }
         }
     }
 }
@@ -25,10 +38,14 @@ final class Clase implements NoTerminal {
         c.match(TokenType.kw_class);
         Token tokenNombre = c.match(TokenType.identificadorDeClase);
         EntradaClase clase = new EntradaClase(tokenNombre);
+        clase.setFinalClase(c.isTipoFinal());
+        clase.setSealed(c.isTipoSealed());
+        clase.setNonSealed(c.isTipoNonSealed());
         c.getTablaSimbolos().agregarClase(clase);
         c.setClaseActual(clase);
         new GenericidadOpcional().parse(c);
         new HerenciaOpcional().parse(c);
+        parsePermisos(c, clase);
         c.match(TokenType.openBraces);
         new ListaMiembros().parse(c);
         if (clase.getConstructores().isEmpty())
@@ -37,6 +54,18 @@ final class Clase implements NoTerminal {
         c.setMetodoActual(null);
         c.setClaseActual(null);
     }
+
+    private void parsePermisos(ContextoSintactico c, EntradaClase clase) {
+        if (!c.es(TokenType.kw_permits))
+            return;
+        c.match(TokenType.kw_permits);
+        do {
+            clase.agregarPermiso(c.match(TokenType.identificadorDeClase));
+            if (!c.es(TokenType.comma))
+                return;
+            c.match(TokenType.comma);
+        } while (true);
+    }
 }
 
 final class Interfaz implements NoTerminal {
@@ -44,10 +73,21 @@ final class Interfaz implements NoTerminal {
         c.match(TokenType.kw_interface);
         Token tokenNombre = c.match(TokenType.identificadorDeClase);
         EntradaClase interfaz = new EntradaClase(tokenNombre, true);
+        interfaz.setFinalClase(c.isTipoFinal());
+        interfaz.setSealed(c.isTipoSealed());
+        interfaz.setNonSealed(c.isTipoNonSealed());
         c.getTablaSimbolos().agregarClase(interfaz);
         c.setClaseActual(interfaz);
         new GenericidadOpcional().parse(c);
         new ExtensionOpcional().parse(c);
+        if (c.es(TokenType.kw_permits)) {
+            c.match(TokenType.kw_permits);
+            do {
+                interfaz.agregarPermiso(c.match(TokenType.identificadorDeClase));
+                if (!c.es(TokenType.comma)) break;
+                c.match(TokenType.comma);
+            } while (true);
+        }
         c.match(TokenType.openBraces);
         new ListaMetodosInterfaz().parse(c);
         c.match(TokenType.closeBraces);
@@ -79,9 +119,18 @@ final class HerenciaOpcional implements NoTerminal {
         }
         if (c.es(TokenType.kw_implements)) {
             c.match(TokenType.kw_implements);
-            Token tokenBase = c.match(TokenType.identificadorDeClase);
-            c.getClaseActual().agregarInterfaz(tipoBaseConArgumento(c, tokenBase));
+            agregarInterfaces(c);
         }
+    }
+
+    private void agregarInterfaces(ContextoSintactico c) {
+        do {
+            Token tokenInterfaz = c.match(TokenType.identificadorDeClase);
+            c.getClaseActual().agregarInterfaz(tipoBaseConArgumento(c, tokenInterfaz));
+            if (!c.es(TokenType.comma))
+                return;
+            c.match(TokenType.comma);
+        } while (true);
     }
 
     private analizadorSemantico.TipoReferencia tipoBaseConArgumento(ContextoSintactico c, Token tokenBase) {
@@ -99,8 +148,13 @@ final class ExtensionOpcional implements NoTerminal {
     public void parse(ContextoSintactico c) {
         if (c.es(TokenType.kw_extends)) {
             c.match(TokenType.kw_extends);
-            Token tokenBase = c.match(TokenType.identificadorDeClase);
-            c.getClaseActual().setClaseBase(tipoBaseConArgumento(c, tokenBase));
+            do {
+                Token tokenBase = c.match(TokenType.identificadorDeClase);
+                c.getClaseActual().agregarInterfaz(tipoBaseConArgumento(c, tokenBase));
+                if (!c.es(TokenType.comma))
+                    return;
+                c.match(TokenType.comma);
+            } while (true);
         }
     }
 
@@ -132,6 +186,11 @@ final class ListaMetodosInterfaz implements NoTerminal {
 final class Miembro implements NoTerminal {
     public void parse(ContextoSintactico c) {
         new VisibilidadOpcional().parse(c);
+        c.setMetodoFinal(false);
+        if (c.es(TokenType.kw_final)) {
+            c.match(TokenType.kw_final);
+            c.setMetodoFinal(true);
+        }
         new MiembroSinVisibilidad().parse(c);
     }
 }
@@ -187,6 +246,7 @@ final class MiembroSinVisibilidad implements NoTerminal {
         }
         EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipoRetorno,
             c.getVisibilidadActual(), estatico);
+        metodo.setFinalMethod(c.isMetodoFinal());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
         c.getClaseActual().agregarMetodo(metodo);
@@ -220,6 +280,7 @@ final class MiembroSinVisibilidad implements NoTerminal {
 
         EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipo,
             c.getVisibilidadActual(), false);
+        metodo.setFinalMethod(c.isMetodoFinal());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
         c.getClaseActual().agregarMetodo(metodo);

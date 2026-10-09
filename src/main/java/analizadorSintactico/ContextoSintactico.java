@@ -15,6 +15,10 @@ public final class ContextoSintactico {
     private EntradaClase claseActual;
     private EntradaMetodo metodoActual;
     private String visibilidadActual = "public";
+    private boolean tipoFinal;
+    private boolean tipoSealed;
+    private boolean tipoNonSealed;
+    private boolean metodoFinal;
 
     public ContextoSintactico(AnalizadorLexico lexer) {
         this(lexer, new TablaSimbolos());
@@ -44,6 +48,14 @@ public final class ContextoSintactico {
     public void setMetodoActual(EntradaMetodo metodoActual) { this.metodoActual = metodoActual; }
     public String getVisibilidadActual() { return visibilidadActual; }
     public void setVisibilidadActual(String visibilidadActual) { this.visibilidadActual = visibilidadActual; }
+    public boolean isTipoFinal() { return tipoFinal; }
+    public void setTipoFinal(boolean tipoFinal) { this.tipoFinal = tipoFinal; }
+    public boolean isTipoSealed() { return tipoSealed; }
+    public void setTipoSealed(boolean tipoSealed) { this.tipoSealed = tipoSealed; }
+    public boolean isTipoNonSealed() { return tipoNonSealed; }
+    public void setTipoNonSealed(boolean tipoNonSealed) { this.tipoNonSealed = tipoNonSealed; }
+    public boolean isMetodoFinal() { return metodoFinal; }
+    public void setMetodoFinal(boolean metodoFinal) { this.metodoFinal = metodoFinal; }
 
     private void avanzar() {
         actual = lexer.proximoToken();
