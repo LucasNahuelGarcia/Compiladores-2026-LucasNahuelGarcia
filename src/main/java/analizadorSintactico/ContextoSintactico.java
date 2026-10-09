@@ -7,6 +7,10 @@ import analizadorLexico.TokenType;
 import analizadorSemantico.EntradaClase;
 import analizadorSemantico.EntradaMetodo;
 import analizadorSemantico.TablaSimbolos;
+import analizadorSemantico.Tipo;
+import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 public final class ContextoSintactico {
     private final AnalizadorLexico lexer;
@@ -20,6 +24,7 @@ public final class ContextoSintactico {
     private boolean tipoNonSealed;
     private boolean metodoFinal;
     private String parametroGenericoMetodo;
+    private Map<String, List<Tipo>> parametrosGenericosMetodo = new LinkedHashMap<>();
 
     public ContextoSintactico(AnalizadorLexico lexer) {
         this(lexer, new TablaSimbolos());
@@ -59,6 +64,8 @@ public final class ContextoSintactico {
     public void setMetodoFinal(boolean metodoFinal) { this.metodoFinal = metodoFinal; }
     public String getParametroGenericoMetodo() { return parametroGenericoMetodo; }
     public void setParametroGenericoMetodo(String parametroGenericoMetodo) { this.parametroGenericoMetodo = parametroGenericoMetodo; }
+    public Map<String, List<Tipo>> getParametrosGenericosMetodo() { return parametrosGenericosMetodo; }
+    public void limpiarParametrosGenericosMetodo() { parametrosGenericosMetodo.clear(); parametroGenericoMetodo = null; }
 
     private void avanzar() {
         actual = lexer.proximoToken();

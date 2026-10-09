@@ -1,6 +1,7 @@
 package analizadorSemantico;
 
 import analizadorLexico.Token;
+import java.util.Set;
 
 public class TipoReferencia extends Tipo {
     private String nombreClase;
@@ -44,15 +45,22 @@ public class TipoReferencia extends Tipo {
 
     @Override
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+        estaBienDeclarado(tablaSimbolos, parametroGenerico == null
+                ? java.util.Collections.emptySet()
+                : java.util.Collections.singleton(parametroGenerico));
+    }
+
+    @Override
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos, Set<String> parametrosGenericos) {
         EntradaClase clase = tablaSimbolos.getClase(nombreClase);
-        if (!nombreClase.equals(parametroGenerico) && clase == null)
+        if (!parametrosGenericos.contains(nombreClase) && clase == null)
             throw new ExcepcionSemantica(getToken(),
                     "el tipo '" + nombreClase + "' no fue declarado");
         if (argumentoGenerico != null && clase != null && clase.getParametroGenerico() == null)
             throw new ExcepcionSemantica(getToken(),
                     "la clase '" + nombreClase + "' no es parametrizada");
         if (argumentoGenerico != null)
-            argumentoGenerico.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+            argumentoGenerico.estaBienDeclarado(tablaSimbolos, parametrosGenericos);
     }
 
     @Override

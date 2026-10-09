@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class EntradaMetodo {
     private Token token;
@@ -15,6 +18,7 @@ public class EntradaMetodo {
     private boolean estatico;
     private boolean finalMethod;
     private String parametroGenerico;
+    private Map<String, List<Tipo>> parametrosGenericos;
     private Map<String, EntradaParametro> parametros;
 
     public EntradaMetodo(Token token, String nombre, Tipo tipoRetorno) {
@@ -28,6 +32,7 @@ public class EntradaMetodo {
         this.visibilidad = visibilidad;
         this.estatico = estatico;
         this.parametros = new LinkedHashMap<>();
+        this.parametrosGenericos = new LinkedHashMap<>();
     }
 
     public void agregarParametro(EntradaParametro parametro) {
@@ -51,6 +56,20 @@ public class EntradaMetodo {
 
     public void setParametroGenerico(String parametroGenerico) {
         this.parametroGenerico = parametroGenerico;
+        if (parametroGenerico != null)
+            parametrosGenericos.put(parametroGenerico, new ArrayList<>());
+    }
+
+    public void agregarParametroGenerico(String nombre, List<Tipo> bounds) {
+        if (parametrosGenericos.containsKey(nombre))
+            throw new ExcepcionSemantica(token, "parametro generico de metodo repetido");
+        parametrosGenericos.put(nombre, new ArrayList<>(bounds));
+        if (parametroGenerico == null)
+            parametroGenerico = nombre;
+    }
+
+    public Map<String, List<Tipo>> getParametrosGenericos() {
+        return Collections.unmodifiableMap(parametrosGenericos);
     }
 
     public Token getToken() {
@@ -114,19 +133,24 @@ public class EntradaMetodo {
     }
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
-        String alcanceGenerico = this.parametroGenerico != null ? this.parametroGenerico : parametroGenerico;
-        if (estatico && this.parametroGenerico == null && tipoRetorno != null
-            && tipoRetorno.usaParametroGenerico(alcanceGenerico))
-            throw new ExcepcionSemantica(tipoRetorno.tokenDelParametro(alcanceGenerico),
+        Set<String> alcance = new java.util.LinkedHashSet<>();
+        if (parametroGenerico != null) alcance.add(parametroGenerico);
+        alcance.addAll(parametrosGenericos.keySet());
+        for (List<Tipo> bounds : parametrosGenericos.values())
+            for (Tipo bound : bounds)
+                bound.estaBienDeclarado(tablaSimbolos, alcance);
+        if (estatico && parametrosGenericos.isEmpty() && tipoRetorno != null
+            && tipoRetorno.usaParametroGenerico(parametroGenerico))
+            throw new ExcepcionSemantica(tipoRetorno.tokenDelParametro(parametroGenerico),
                     "el parametro generico no puede usarse en un metodo estatico");
         if (tipoRetorno != null)
-            tipoRetorno.estaBienDeclarado(tablaSimbolos, alcanceGenerico);
+            tipoRetorno.estaBienDeclarado(tablaSimbolos, alcance);
         for (EntradaParametro parametro : parametros.values()) {
-                if (estatico && this.parametroGenerico == null
-                    && parametro.getTipo().usaParametroGenerico(alcanceGenerico))
-                throw new ExcepcionSemantica(parametro.getTipo().tokenDelParametro(alcanceGenerico),
+            if (estatico && parametrosGenericos.isEmpty()
+                    && parametro.getTipo().usaParametroGenerico(parametroGenerico))
+                throw new ExcepcionSemantica(parametro.getTipo().tokenDelParametro(parametroGenerico),
                         "el parametro generico no puede usarse en un metodo estatico");
-            parametro.estaBienDeclarado(tablaSimbolos, alcanceGenerico);
+            parametro.getTipo().estaBienDeclarado(tablaSimbolos, alcance);
         }
     }
 
@@ -135,6 +159,8 @@ public class EntradaMetodo {
                 copiarTipo(tipoRetorno, sustituciones), visibilidad, estatico);
         copia.finalMethod = finalMethod;
         copia.parametroGenerico = parametroGenerico;
+        for (Map.Entry<String, List<Tipo>> entrada : parametrosGenericos.entrySet())
+            copia.parametrosGenericos.put(entrada.getKey(), new ArrayList<>(entrada.getValue()));
         for (EntradaParametro parametro : parametros.values())
             copia.agregarParametro(new EntradaParametro(
                     parametro.getToken(), parametro.getNombre(),

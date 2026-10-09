@@ -1,6 +1,7 @@
 package analizadorSemantico;
 
 import analizadorLexico.Token;
+import java.util.Set;
 
 public class TipoArreglo extends Tipo {
     private Tipo tipoElemento;
@@ -31,6 +32,11 @@ public class TipoArreglo extends Tipo {
     @Override
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
         tipoElemento.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+    }
+
+    @Override
+    public void estaBienDeclarado(TablaSimbolos tablaSimbolos, Set<String> parametrosGenericos) {
+        tipoElemento.estaBienDeclarado(tablaSimbolos, parametrosGenericos);
     }
 
     @Override

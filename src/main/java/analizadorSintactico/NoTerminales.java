@@ -240,8 +240,22 @@ final class MiembroSinVisibilidad implements NoTerminal {
 
     private void parseParametroGenericoMetodo(ContextoSintactico c) {
         c.match(TokenType.lessThan);
-        Token parametro = c.match(TokenType.IdentificadorDeParametroDeTipo);
-        c.setParametroGenericoMetodo(parametro.getLexema());
+        do {
+            Token parametro = c.match(TokenType.IdentificadorDeParametroDeTipo);
+            java.util.List<analizadorSemantico.Tipo> bounds = new java.util.ArrayList<>();
+            if (c.es(TokenType.kw_extends)) {
+                c.match(TokenType.kw_extends);
+                bounds.add(new Tipo().parseTipo(c));
+                while (c.es(TokenType.and)) {
+                    c.match(TokenType.and);
+                    bounds.add(new Tipo().parseTipo(c));
+                }
+            }
+            c.getParametrosGenericosMetodo().put(parametro.getLexema(), bounds);
+            if (!c.es(TokenType.comma))
+                break;
+            c.match(TokenType.comma);
+        } while (true);
         c.match(TokenType.greaterThan);
     }
 
@@ -259,14 +273,16 @@ final class MiembroSinVisibilidad implements NoTerminal {
         }
         EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipoRetorno,
             c.getVisibilidadActual(), estatico);
-        metodo.setParametroGenerico(c.getParametroGenericoMetodo());
+        for (java.util.Map.Entry<String, java.util.List<analizadorSemantico.Tipo>> entrada
+                : c.getParametrosGenericosMetodo().entrySet())
+            metodo.agregarParametroGenerico(entrada.getKey(), entrada.getValue());
         metodo.setFinalMethod(c.isMetodoFinal());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
         c.getClaseActual().agregarMetodo(metodo);
         new Bloque().parse(c);
         c.setMetodoActual(null);
-        c.setParametroGenericoMetodo(null);
+        c.limpiarParametrosGenericosMetodo();
     }
 
     private void registrarDeclaracion(ContextoSintactico c, analizadorSemantico.Tipo tipo, boolean puedeSerConstructor) {
@@ -344,18 +360,20 @@ final class MetodoInterfaz implements NoTerminal {
         if (c.es(TokenType.lessThan)) {
             c.match(TokenType.lessThan);
             Token parametro = c.match(TokenType.IdentificadorDeParametroDeTipo);
-            c.setParametroGenericoMetodo(parametro.getLexema());
+            c.getParametrosGenericosMetodo().put(parametro.getLexema(), new java.util.ArrayList<>());
             c.match(TokenType.greaterThan);
         }
         analizadorSemantico.Tipo tipoRetorno = new TipoMetodo().parseTipoMetodo(c);
         Token tokenNombre = c.match(TokenType.identificador);
         EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipoRetorno);
-        metodo.setParametroGenerico(c.getParametroGenericoMetodo());
+        for (java.util.Map.Entry<String, java.util.List<analizadorSemantico.Tipo>> entrada
+                : c.getParametrosGenericosMetodo().entrySet())
+            metodo.agregarParametroGenerico(entrada.getKey(), entrada.getValue());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
         c.getClaseActual().agregarMetodo(metodo);
         c.setMetodoActual(null);
-        c.setParametroGenericoMetodo(null);
+        c.limpiarParametrosGenericosMetodo();
         c.match(TokenType.semicolon);
     }
 }

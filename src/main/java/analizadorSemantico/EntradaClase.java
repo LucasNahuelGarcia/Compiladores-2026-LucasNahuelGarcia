@@ -302,37 +302,60 @@ public class EntradaClase {
     }
 
     private boolean mismaFirma(EntradaMetodo padre, EntradaMetodo hijo, Map<String, Tipo> sustituciones) {
-        if (!mismoTipo(padre.getTipoRetorno(), hijo.getTipoRetorno(), sustituciones))
+        if (padre.getParametrosGenericos().size() != hijo.getParametrosGenericos().size())
+            return false;
+        Map<String, String> equivalencias = new LinkedHashMap<>();
+        java.util.Iterator<String> nombresPadre = padre.getParametrosGenericos().keySet().iterator();
+        java.util.Iterator<String> nombresHijo = hijo.getParametrosGenericos().keySet().iterator();
+        while (nombresPadre.hasNext()) {
+            String nombrePadre = nombresPadre.next();
+            String nombreHijo = nombresHijo.next();
+            equivalencias.put(nombrePadre, nombreHijo);
+            java.util.List<Tipo> boundsPadre = padre.getParametrosGenericos().get(nombrePadre);
+            java.util.List<Tipo> boundsHijo = hijo.getParametrosGenericos().get(nombreHijo);
+            if (boundsPadre.size() != boundsHijo.size())
+                return false;
+            for (int i = 0; i < boundsPadre.size(); i++)
+                if (!mismoTipo(boundsPadre.get(i), boundsHijo.get(i), sustituciones, equivalencias))
+                    return false;
+        }
+        if (!mismoTipo(padre.getTipoRetorno(), hijo.getTipoRetorno(), sustituciones, equivalencias))
             return false;
         EntradaParametro[] parametrosPadre = padre.getParametros().values().toArray(new EntradaParametro[0]);
         EntradaParametro[] parametrosHijo = hijo.getParametros().values().toArray(new EntradaParametro[0]);
         if (parametrosPadre.length != parametrosHijo.length)
             return false;
         for (int i = 0; i < parametrosPadre.length; i++)
-            if (!mismoTipo(parametrosPadre[i].getTipo(), parametrosHijo[i].getTipo(), sustituciones))
+            if (!mismoTipo(parametrosPadre[i].getTipo(), parametrosHijo[i].getTipo(), sustituciones, equivalencias))
                 return false;
         return true;
     }
 
-    private boolean mismoTipo(Tipo primero, Tipo segundo, Map<String, Tipo> sustituciones) {
+    private boolean mismoTipo(Tipo primero, Tipo segundo, Map<String, Tipo> sustituciones,
+                              Map<String, String> equivalencias) {
         if (primero == null || segundo == null)
             return primero == segundo;
         if (primero instanceof TipoArreglo && segundo instanceof TipoArreglo)
             return mismoTipo(((TipoArreglo) primero).getTipoElemento(),
-                    ((TipoArreglo) segundo).getTipoElemento(), sustituciones);
+                    ((TipoArreglo) segundo).getTipoElemento(), sustituciones, equivalencias);
         if (primero instanceof TipoPrimitivo && segundo instanceof TipoPrimitivo)
             return ((TipoPrimitivo) primero).getPrimitivo() == ((TipoPrimitivo) segundo).getPrimitivo();
         if (primero instanceof TipoReferencia && segundo instanceof TipoReferencia) {
             TipoReferencia referenciaPrimera = (TipoReferencia) primero;
             TipoReferencia referenciaSegunda = (TipoReferencia) segundo;
+            String equivalente = equivalencias.get(referenciaPrimera.getNombreClase());
+            if (equivalente != null)
+                return equivalente.equals(referenciaSegunda.getNombreClase())
+                        && mismoTipo(referenciaPrimera.getArgumentoGenerico(),
+                                referenciaSegunda.getArgumentoGenerico(), sustituciones, equivalencias);
             Tipo sustituto = sustituciones.get(referenciaPrimera.getNombreClase());
             if (sustituto != null)
-                return mismoTipo(sustituto, segundo, sustituciones);
-            if (!referenciaPrimera.getNombreClase().equals(referenciaSegunda.getNombreClase()))
-                return false;
-            return mismoTipo(referenciaPrimera.getArgumentoGenerico(),
-                    referenciaSegunda.getArgumentoGenerico(), sustituciones);
+                return mismoTipo(sustituto, segundo, sustituciones, equivalencias);
+            return referenciaPrimera.getNombreClase().equals(referenciaSegunda.getNombreClase())
+                    && mismoTipo(referenciaPrimera.getArgumentoGenerico(),
+                            referenciaSegunda.getArgumentoGenerico(), sustituciones, equivalencias);
         }
         return false;
     }
+
 }

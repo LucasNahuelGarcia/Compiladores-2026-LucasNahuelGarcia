@@ -3,6 +3,7 @@ package analizadorSemantico;
 import analizadorLexico.Token;
 
 import java.util.Objects;
+import java.util.Set;
 
 public abstract class Tipo {
     private Token token;
@@ -26,6 +27,12 @@ public abstract class Tipo {
     }
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
+        estaBienDeclarado(tablaSimbolos, parametroGenerico == null
+            ? java.util.Collections.emptySet()
+            : java.util.Collections.singleton(parametroGenerico));
+        }
+
+        public void estaBienDeclarado(TablaSimbolos tablaSimbolos, Set<String> parametrosGenericos) {
     }
 
     public boolean usaParametroGenerico(String parametroGenerico) {
