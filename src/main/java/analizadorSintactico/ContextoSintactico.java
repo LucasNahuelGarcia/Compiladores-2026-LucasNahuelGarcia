@@ -19,6 +19,7 @@ public final class ContextoSintactico {
     private boolean tipoSealed;
     private boolean tipoNonSealed;
     private boolean metodoFinal;
+    private String parametroGenericoMetodo;
 
     public ContextoSintactico(AnalizadorLexico lexer) {
         this(lexer, new TablaSimbolos());
@@ -56,6 +57,8 @@ public final class ContextoSintactico {
     public void setTipoNonSealed(boolean tipoNonSealed) { this.tipoNonSealed = tipoNonSealed; }
     public boolean isMetodoFinal() { return metodoFinal; }
     public void setMetodoFinal(boolean metodoFinal) { this.metodoFinal = metodoFinal; }
+    public String getParametroGenericoMetodo() { return parametroGenericoMetodo; }
+    public void setParametroGenericoMetodo(String parametroGenericoMetodo) { this.parametroGenericoMetodo = parametroGenericoMetodo; }
 
     private void avanzar() {
         actual = lexer.proximoToken();

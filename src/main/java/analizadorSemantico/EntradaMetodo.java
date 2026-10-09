@@ -14,6 +14,7 @@ public class EntradaMetodo {
     private String visibilidad;
     private boolean estatico;
     private boolean finalMethod;
+    private String parametroGenerico;
     private Map<String, EntradaParametro> parametros;
 
     public EntradaMetodo(Token token, String nombre, Tipo tipoRetorno) {
@@ -42,6 +43,14 @@ public class EntradaMetodo {
 
     public String getClaveConstructor() {
         return String.valueOf(parametros.size());
+    }
+
+    public String getParametroGenerico() {
+        return parametroGenerico;
+    }
+
+    public void setParametroGenerico(String parametroGenerico) {
+        this.parametroGenerico = parametroGenerico;
     }
 
     public Token getToken() {
@@ -105,16 +114,19 @@ public class EntradaMetodo {
     }
 
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, String parametroGenerico) {
-        if (estatico && tipoRetorno != null && tipoRetorno.usaParametroGenerico(parametroGenerico))
-            throw new ExcepcionSemantica(tipoRetorno.tokenDelParametro(parametroGenerico),
+        String alcanceGenerico = this.parametroGenerico != null ? this.parametroGenerico : parametroGenerico;
+        if (estatico && this.parametroGenerico == null && tipoRetorno != null
+            && tipoRetorno.usaParametroGenerico(alcanceGenerico))
+            throw new ExcepcionSemantica(tipoRetorno.tokenDelParametro(alcanceGenerico),
                     "el parametro generico no puede usarse en un metodo estatico");
         if (tipoRetorno != null)
-            tipoRetorno.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+            tipoRetorno.estaBienDeclarado(tablaSimbolos, alcanceGenerico);
         for (EntradaParametro parametro : parametros.values()) {
-            if (estatico && parametro.getTipo().usaParametroGenerico(parametroGenerico))
-                throw new ExcepcionSemantica(parametro.getTipo().tokenDelParametro(parametroGenerico),
+                if (estatico && this.parametroGenerico == null
+                    && parametro.getTipo().usaParametroGenerico(alcanceGenerico))
+                throw new ExcepcionSemantica(parametro.getTipo().tokenDelParametro(alcanceGenerico),
                         "el parametro generico no puede usarse en un metodo estatico");
-            parametro.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+            parametro.estaBienDeclarado(tablaSimbolos, alcanceGenerico);
         }
     }
 
@@ -122,6 +134,7 @@ public class EntradaMetodo {
         EntradaMetodo copia = new EntradaMetodo(token, nombre,
                 copiarTipo(tipoRetorno, sustituciones), visibilidad, estatico);
         copia.finalMethod = finalMethod;
+        copia.parametroGenerico = parametroGenerico;
         for (EntradaParametro parametro : parametros.values())
             copia.agregarParametro(new EntradaParametro(
                     parametro.getToken(), parametro.getNombre(),
