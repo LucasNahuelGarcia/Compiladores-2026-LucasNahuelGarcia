@@ -341,7 +341,7 @@ public class EntradaClase {
         return true;
     }
 
-    private boolean mismoTipo(Tipo primero, Tipo segundo, Map<String, Tipo> sustituciones,
+    private static boolean mismoTipo(Tipo primero, Tipo segundo, Map<String, Tipo> sustituciones,
                               Map<String, String> equivalencias) {
         if (primero == null || segundo == null)
             return primero == segundo;
