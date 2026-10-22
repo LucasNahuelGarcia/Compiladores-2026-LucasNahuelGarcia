@@ -359,13 +359,22 @@ public class EntradaClase {
                         && mismoTipo(referenciaPrimera.getArgumentoGenerico(),
                                 referenciaSegunda.getArgumentoGenerico(), sustituciones, equivalencias);
             Tipo sustituto = sustituciones.get(referenciaPrimera.getNombreClase());
-            if (sustituto != null)
+            if (sustituto != null && !esSustitucionIdentica(referenciaPrimera, sustituto))
                 return mismoTipo(sustituto, segundo, sustituciones, equivalencias);
             return referenciaPrimera.getNombreClase().equals(referenciaSegunda.getNombreClase())
                     && mismoTipo(referenciaPrimera.getArgumentoGenerico(),
                             referenciaSegunda.getArgumentoGenerico(), sustituciones, equivalencias);
         }
         return false;
+    }
+
+    private static boolean esSustitucionIdentica(TipoReferencia referencia, Tipo sustituto) {
+        if (!(sustituto instanceof TipoReferencia))
+            return false;
+        TipoReferencia referenciaSustituta = (TipoReferencia) sustituto;
+        return referencia.getArgumentoGenerico() == null
+                && referenciaSustituta.getArgumentoGenerico() == null
+                && referencia.getNombreClase().equals(referenciaSustituta.getNombreClase());
     }
 
 }

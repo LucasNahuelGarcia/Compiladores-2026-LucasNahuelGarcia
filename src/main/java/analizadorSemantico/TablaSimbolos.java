@@ -253,9 +253,6 @@ public class TablaSimbolos {
             validarArgumentoGenerico(claseBase, padre);
             validarJerarquia(padre, estados);
         }
-        if (clase.isSealed() && clase.getPermisos().isEmpty())
-            throw new ExcepcionSemantica(clase.getToken(),
-                "una clase sealed debe declarar permisos");
         for (TipoReferencia interfaz : clase.getInterfaces()) {
             EntradaClase entradaInterfaz = clases.get(interfaz.getNombreClase());
             if (entradaInterfaz == null)
@@ -299,9 +296,9 @@ public class TablaSimbolos {
 
     private void validarPermisos(EntradaClase clase) {
         if (clase.getPermisos().isEmpty()) {
-            if (clase.isSealed())
+            if (clase.isSealed() && !tieneSubtiposDirectos(clase))
                 throw new ExcepcionSemantica(clase.getToken(),
-                        "una entidad sealed debe declarar permisos");
+                        "una entidad sealed debe declarar permisos o tener subtipos directos");
             return;
         }
         if (!clase.isSealed())
@@ -312,11 +309,7 @@ public class TablaSimbolos {
             if (permitido == null)
                 throw new ExcepcionSemantica(permiso,
                         "el tipo permitido no fue declarado");
-            boolean heredaDirectamente = clase.getNombre().equals(
-                    permitido.getClaseBase() == null ? null : permitido.getClaseBase().getNombreClase());
-            for (TipoReferencia interfaz : permitido.getInterfaces())
-                heredaDirectamente |= clase.getNombre().equals(interfaz.getNombreClase());
-            if (!heredaDirectamente)
+            if (!esSubtipoDirecto(clase, permitido))
                 throw new ExcepcionSemantica(permiso,
                         "el tipo permitido no hereda directamente de la entidad sealed");
         }
@@ -325,6 +318,26 @@ public class TablaSimbolos {
     private boolean contienePermiso(EntradaClase clase, String nombre) {
         for (Token permiso : clase.getPermisos())
             if (permiso.getLexema().equals(nombre))
+                return true;
+        if (!clase.isSealed() || !clase.getPermisos().isEmpty())
+            return false;
+        EntradaClase candidato = clases.get(nombre);
+        return candidato != null && esSubtipoDirecto(clase, candidato);
+    }
+
+    private boolean tieneSubtiposDirectos(EntradaClase clase) {
+        for (EntradaClase candidato : clases.values())
+            if (esSubtipoDirecto(clase, candidato))
+                return true;
+        return false;
+    }
+
+    private boolean esSubtipoDirecto(EntradaClase clase, EntradaClase candidato) {
+        TipoReferencia claseBase = candidato.getClaseBase();
+        if (claseBase != null && clase.getNombre().equals(claseBase.getNombreClase()))
+            return true;
+        for (TipoReferencia interfaz : candidato.getInterfaces())
+            if (clase.getNombre().equals(interfaz.getNombreClase()))
                 return true;
         return false;
     }
