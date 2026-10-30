@@ -3,7 +3,7 @@ package analizadorSemantico;
 import analizadorLexico.Token;
 import java.util.Objects;
 
-public final class VariableLocal {
+public final class VariableLocal implements EntidadDeclarativa {
     private final Token token;
     private final String nombre;
     private final Tipo tipo;

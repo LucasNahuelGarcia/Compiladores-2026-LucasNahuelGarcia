@@ -5,7 +5,7 @@ import analizadorLexico.Token;
 import java.util.Objects;
 import java.util.Map;
 
-public class EntradaAtributo {
+public class EntradaAtributo implements EntidadDeclarativa {
     private Token token;
     private String nombre;
     private Tipo tipo;

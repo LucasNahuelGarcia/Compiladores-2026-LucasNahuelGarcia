@@ -37,11 +37,13 @@ public final class ContextoAnalisis {
         pilaDeBloques.pop();
     }
 
-    public void declararLocal(Token token, String nombre, Tipo tipo) {
+    public VariableLocal declararLocal(Token token, String nombre, Tipo tipo) {
         if (buscarParametro(nombre) != null || buscarLocalVisible(nombre) != null)
             throw new ExcepcionSemantica(token,
                     "el nombre de variable local o parametro '" + nombre + "' ya esta visible");
-        pilaDeBloques.peek().agregar(new VariableLocal(token, nombre, tipo));
+        VariableLocal local = new VariableLocal(token, nombre, tipo);
+        pilaDeBloques.peek().agregar(local);
+        return local;
     }
 
     public VariableLocal buscarLocalVisible(String nombre) {
@@ -60,10 +62,10 @@ public final class ContextoAnalisis {
     public VariableVisible resolverVariable(String nombre) {
         VariableLocal local = buscarLocalVisible(nombre);
         if (local != null)
-            return new VariableVisible(local.getToken(), local.getTipo(), false, false);
+            return new VariableVisible(local.getToken(), local.getTipo(), false, false, local);
         EntradaParametro parametro = buscarParametro(nombre);
         if (parametro != null)
-            return new VariableVisible(parametro.getToken(), parametro.getTipo(), false, false);
+            return new VariableVisible(parametro.getToken(), parametro.getTipo(), false, false, parametro);
         EntradaAtributo atributo = claseActual.getAtributos().get(nombre);
         if (atributo != null) {
             Tipo receptor = claseActual.getParametroGenerico() == null
@@ -73,7 +75,8 @@ public final class ContextoAnalisis {
                                 claseActual.getSimboloParametroGenerico()));
             Tipo tipo = TipoVistas.vista(atributo.getDeclaracionOriginal().getTipo(), receptor,
                     atributo.getClaseDeclaracion(), tablaSimbolos);
-            return new VariableVisible(atributo.getToken(), tipo, true, atributo.isEstatico(), atributo);
+            return new VariableVisible(atributo.getToken(), tipo, true, atributo.isEstatico(),
+                    atributo.getDeclaracionOriginal(), atributo);
         }
         return null;
     }
@@ -83,18 +86,21 @@ public final class ContextoAnalisis {
         private final Tipo tipo;
         private final boolean atributo;
         private final boolean estatico;
+        private final EntidadDeclarativa entidad;
         private final EntradaAtributo referenciaAtributo;
 
-        private VariableVisible(Token token, Tipo tipo, boolean atributo, boolean estatico) {
-            this(token, tipo, atributo, estatico, null);
+        private VariableVisible(Token token, Tipo tipo, boolean atributo, boolean estatico,
+                                EntidadDeclarativa entidad) {
+            this(token, tipo, atributo, estatico, entidad, null);
         }
 
         private VariableVisible(Token token, Tipo tipo, boolean atributo, boolean estatico,
-                                EntradaAtributo referenciaAtributo) {
+                                EntidadDeclarativa entidad, EntradaAtributo referenciaAtributo) {
             this.token = token;
             this.tipo = tipo;
             this.atributo = atributo;
             this.estatico = estatico;
+            this.entidad = entidad;
             this.referenciaAtributo = referenciaAtributo;
         }
 
@@ -102,6 +108,7 @@ public final class ContextoAnalisis {
         public Tipo getTipo() { return tipo; }
         public boolean esAtributo() { return atributo; }
         public boolean esEstatico() { return estatico; }
+        public EntidadDeclarativa getEntidad() { return entidad; }
         public EntradaAtributo getReferenciaAtributo() { return referenciaAtributo; }
     }
 }

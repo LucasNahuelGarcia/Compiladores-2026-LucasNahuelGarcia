@@ -49,7 +49,8 @@ final class AnalizadorCuerpos {
                 Tipo t = tipo(es.get(0));
                 if (t == null || esVoid(t)) error(es.get(0).getToken(), "una variable local no puede tener tipo void");
                 if (t instanceof TipoNull) error(es.get(0).getToken(), "var no puede inferir el tipo null");
-                contexto.declararLocal(n.getNombre(), n.getNombre().getLexema(), t); return;
+                n.vincularEntidad(contexto.declararLocal(
+                        n.getNombre(), n.getNombre().getLexema(), t)); return;
             }
             case RETURN:
                 Tipo esperado = contexto.getRetornoEsperado();
@@ -98,7 +99,8 @@ final class AnalizadorCuerpos {
                 Tipo elemento = ((TipoArreglo) iterable).getTipoElemento();
                 if (!ConformidadTipos.conforma(elemento, f.getTipoVariable(), tabla))
                     error(f.getNombreVariable(), "el tipo de la variable del for no coincide con el elemento");
-                contexto.declararLocal(f.getNombreVariable(), f.getNombreVariable().getLexema(), f.getTipoVariable());
+                f.vincularEntidad(contexto.declararLocal(f.getNombreVariable(),
+                        f.getNombreVariable().getLexema(), f.getTipoVariable()));
             }
             analizarSentencia(f.getCuerpo());
         } finally { contexto.cerrarBloque(); }
@@ -127,6 +129,7 @@ final class AnalizadorCuerpos {
                 if (v.esAtributo() && "private".equals(v.getReferenciaAtributo().getVisibilidad())
                         && v.getReferenciaAtributo().getClaseDeclaracion() != contexto.getClaseActual())
                     error(n.getNombre(), "el atributo no es accesible");
+                n.vincularEntidad(v.getEntidad());
                 t = v.getTipo(); e.setAsignable(true); break;
             }
             case PARENTESIS: t = tipo(a.get(0)); break;
@@ -145,17 +148,19 @@ final class AnalizadorCuerpos {
                 if (ctor == null) error(e.getToken(), "no existe un constructor compatible");
                 if ("private".equals(ctor.getVisibilidad()) && c != contexto.getClaseActual())
                     error(e.getToken(), "el constructor no es accesible");
+                n.vincularEntidad(ctor.getDeclaracionOriginal());
                 validarArgumentos(a, ctor, clas, e.getToken(), null); t = clas; e.setLlamadaValida(true); break;
             }
             case ACCESO_INDICE: {
                 Tipo base = tipo(a.get(0)); exigirTipo(a.get(1), TipoPrimitivo.Primitivo.INT);
                 if (!(base instanceof TipoArreglo)) error(e.getToken(), "solo se puede indexar un arreglo");
-                t = ((TipoArreglo)base).getTipoElemento(); e.setAsignable(!esParentesis(a.get(0))); break;
+                t = ((TipoArreglo)base).getTipoElemento(); e.setAsignable(!tieneBaseParentizada(a.get(0))); break;
             }
             case ACCESO_ATRIBUTO: {
                 Tipo receptor = tipo(a.get(0));
                 if (receptor instanceof TipoArreglo) {
                     if (!"length".equals(n.getNombre().getLexema())) error(n.getNombre(), "los arreglos solo exponen el atributo length");
+                    n.vincularEntidad(tabla.getAtributoLengthArreglo());
                     t = prim(TipoPrimitivo.Primitivo.INT, e.getToken());
                     break;
                 }
@@ -165,8 +170,9 @@ final class AnalizadorCuerpos {
                 if (attr == null) error(n.getNombre(), "el atributo no fue declarado");
                 if (attr.getVisibilidad().equals("private") && attr.getClaseDeclaracion() != contexto.getClaseActual()) error(n.getNombre(), "el atributo no es accesible");
                 if (contexto.esEstatico() && attr.getClaseDeclaracion() == contexto.getClaseActual() && !attr.isEstatico()) error(n.getNombre(), "un atributo de instancia no puede usarse en un contexto estatico");
+                n.vincularEntidad(attr.getDeclaracionOriginal());
                 t = TipoVistas.vista(attr.getDeclaracionOriginal().getTipo(), receptor, attr.getClaseDeclaracion(), tabla);
-                e.setAsignable(!esParentesis(a.get(0))); break;
+                e.setAsignable(!tieneBaseParentizada(a.get(0))); break;
             }
             case LLAMADA_IMPLICITA:
             case LLAMADA_ESTATICA:
@@ -181,6 +187,7 @@ final class AnalizadorCuerpos {
                             error(n.getNombre(), "el arreglo solo admite toString() sin argumentos");
                         EntradaClase object = tabla.getClase("Object");
                         EntradaMetodo toString = object.getMetodo("toString", 0);
+                        n.vincularEntidad(toString.getDeclaracionOriginal());
                         t = toString.getTipoRetorno(); e.setLlamadaValida(true); break;
                     }
                     c = claseDe(receptor, e.getToken());
@@ -197,6 +204,7 @@ final class AnalizadorCuerpos {
                 if (n.getClase() == NodoExpresionAst.Clase.LLAMADA_ESTATICA && !m.isEstatico()) error(n.getNombre(), "el metodo no es estatico");
                 if ("private".equals(m.getVisibilidad()) && m.getClaseDeclaracion() != contexto.getClaseActual())
                     error(n.getNombre(), "el metodo no es accesible");
+                n.vincularEntidad(m.getDeclaracionOriginal());
                 Map<ParametroTipo, Tipo> inferencias = validarArgumentos(
                         args, m, receptor, n.getNombre(), contextoEsperado);
                 t = ConformidadTipos.vista(TipoVistas.vista(
@@ -205,7 +213,8 @@ final class AnalizadorCuerpos {
                 if (n.getClase() == NodoExpresionAst.Clase.LLAMADA_IMPLICITA
                         && contexto.esEstatico() && !m.isEstatico())
                     error(n.getNombre(), "un metodo de instancia no puede invocarse implicitamente en un contexto estatico");
-                e.setLlamadaValida(n.getClase() != NodoExpresionAst.Clase.LLAMADA_MIEMBRO || !esParentesis(a.get(0))); break;
+                e.setLlamadaValida(n.getClase() != NodoExpresionAst.Clase.LLAMADA_MIEMBRO
+                        || !tieneBaseParentizada(a.get(0))); break;
             }
             case ASIGNACION: {
                 Tipo izq = tipo(a.get(0)), der = tipo(a.get(1), izq);
@@ -318,7 +327,16 @@ final class AnalizadorCuerpos {
     private Tipo tipoClaseActual(Token t) { EntradaClase c=contexto.getClaseActual(); return c.getParametroGenerico()==null ? new TipoReferencia(t,c.getNombre()) : new TipoReferencia(t,c.getNombre(),new TipoParametro(c.getSimboloParametroGenerico().getToken(),c.getSimboloParametroGenerico())); }
     private EntradaClase claseDe(Tipo t, Token token) { if (!(t instanceof TipoReferencia) || ((TipoReferencia)t).esParametroTipo()) error(token,"se esperaba un objeto para acceder al miembro"); EntradaClase c=tabla.getClase(((TipoReferencia)t).getNombreClase()); if(c==null) error(token,"tipo no declarado"); return c; }
     private TipoReferencia comoRef(Tipo t,Token token) { if(!(t instanceof TipoReferencia)) error(token,"se esperaba un tipo de referencia"); return (TipoReferencia)t; }
-    private boolean esParentesis(ExpresionAst e) { return e instanceof NodoExpresionAst && ((NodoExpresionAst)e).getClase()==NodoExpresionAst.Clase.PARENTESIS; }
+    private boolean tieneBaseParentizada(ExpresionAst e) {
+        if (!(e instanceof NodoExpresionAst)) return false;
+        NodoExpresionAst nodo = (NodoExpresionAst) e;
+        if (nodo.getClase() == NodoExpresionAst.Clase.PARENTESIS) return true;
+        if (nodo.getClase() == NodoExpresionAst.Clase.ACCESO_ATRIBUTO
+                || nodo.getClase() == NodoExpresionAst.Clase.ACCESO_INDICE
+                || nodo.getClase() == NodoExpresionAst.Clase.LLAMADA_MIEMBRO)
+            return !nodo.getOperandos().isEmpty() && tieneBaseParentizada(nodo.getOperandos().get(0));
+        return false;
+    }
     private boolean argsVacias(List<ExpresionAst> args, int desde) { return args.size() == desde; }
     private boolean esVoid(Tipo t) { return t instanceof TipoVoid || t instanceof TipoPrimitivo && ((TipoPrimitivo)t).getPrimitivo()==TipoPrimitivo.Primitivo.VOID; }
     private boolean esDeclaracionLocalDirecta(SentenciaAst s) { return s instanceof NodoSentenciaAst && ((NodoSentenciaAst)s).getClase()==NodoSentenciaAst.Clase.VARIABLE_LOCAL; }

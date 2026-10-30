@@ -4,7 +4,7 @@ import analizadorLexico.Token;
 
 import java.util.Objects;
 
-public class EntradaParametro {
+public class EntradaParametro implements EntidadDeclarativa {
     private Token token;
     private String nombre;
     private Tipo tipo;

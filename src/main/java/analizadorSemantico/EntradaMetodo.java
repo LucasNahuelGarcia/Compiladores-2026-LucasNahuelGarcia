@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 import analizadorSemantico.ast.BloqueAst;
 
-public class EntradaMetodo {
+public class EntradaMetodo implements EntidadDeclarativa {
     private Token token;
     private String nombre;
     private Tipo tipoRetorno;

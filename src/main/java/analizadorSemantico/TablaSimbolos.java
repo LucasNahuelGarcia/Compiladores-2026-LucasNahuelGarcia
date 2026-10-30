@@ -13,10 +13,13 @@ import java.util.List;
 public class TablaSimbolos {
     private Map<String, EntradaClase> clases;
     private List<ExcepcionSemantica> errores;
+    private final EntradaAtributo atributoLengthArreglo;
 
     public TablaSimbolos() {
         clases = new LinkedHashMap<>();
         errores = new ArrayList<>();
+        atributoLengthArreglo = new EntradaAtributo(tokenMiembro("length"), "length",
+                tipoPrimitivo(TipoPrimitivo.Primitivo.INT));
         inicializarEntornoPredefinido();
     }
 
@@ -127,6 +130,10 @@ public class TablaSimbolos {
 
     public EntradaClase getClase(String nombre) {
         return clases.get(nombre);
+    }
+
+    public EntradaAtributo getAtributoLengthArreglo() {
+        return atributoLengthArreglo;
     }
 
     public Map<String, EntradaClase> getClases() {
