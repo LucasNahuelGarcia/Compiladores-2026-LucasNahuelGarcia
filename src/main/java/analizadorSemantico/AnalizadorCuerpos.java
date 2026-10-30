@@ -225,9 +225,8 @@ final class AnalizadorCuerpos {
             case INCREMENTO: {
                 Tipo op = tipo(a.get(0)); if (!a.get(0).esAsignable()) error(e.getToken(), "el destino no es asignable");
                 if (!(op instanceof TipoPrimitivo)
-                        || !Arrays.asList(TipoPrimitivo.Primitivo.INT, TipoPrimitivo.Primitivo.CHAR)
-                                .contains(((TipoPrimitivo)op).getPrimitivo()))
-                    error(e.getToken(), "incremento requiere una variable numerica");
+                        || ((TipoPrimitivo)op).getPrimitivo() != TipoPrimitivo.Primitivo.INT)
+                    error(e.getToken(), "incremento requiere una variable int");
                 t = op; e.setLlamadaValida(true); break;
             }
             case UNARIO: {
