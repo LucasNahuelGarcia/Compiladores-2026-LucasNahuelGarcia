@@ -11,6 +11,8 @@ public class EntradaAtributo {
     private Tipo tipo;
     private String visibilidad;
     private boolean estatico;
+    private EntradaClase claseDeclaracion;
+    private EntradaAtributo declaracionOriginal;
 
     public EntradaAtributo(Token token, String nombre, Tipo tipo) {
         this(token, nombre, tipo, "public", false);
@@ -60,6 +62,19 @@ public class EntradaAtributo {
         return estatico;
     }
 
+    public EntradaClase getClaseDeclaracion() { return claseDeclaracion; }
+
+    void setClaseDeclaracion(EntradaClase claseDeclaracion) {
+        if (this.claseDeclaracion == null) {
+            this.claseDeclaracion = claseDeclaracion;
+            this.declaracionOriginal = this;
+        }
+    }
+
+    public EntradaAtributo getDeclaracionOriginal() {
+        return declaracionOriginal == null ? this : declaracionOriginal;
+    }
+
     public void setEstatico(boolean estatico) {
         this.estatico = estatico;
     }
@@ -75,11 +90,15 @@ public class EntradaAtributo {
             tipo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
     }
 
-    EntradaAtributo copiar(Map<String, Tipo> sustituciones) {
-        return new EntradaAtributo(token, nombre, copiarTipo(tipo, sustituciones), visibilidad, estatico);
+    EntradaAtributo copiar(Map<ParametroTipo, Tipo> sustituciones) {
+        EntradaAtributo copia = new EntradaAtributo(token, nombre, copiarTipo(tipo, sustituciones),
+                visibilidad, estatico);
+        copia.claseDeclaracion = claseDeclaracion;
+        copia.declaracionOriginal = getDeclaracionOriginal();
+        return copia;
     }
 
-    private Tipo copiarTipo(Tipo tipo, Map<String, Tipo> sustituciones) {
+    private Tipo copiarTipo(Tipo tipo, Map<ParametroTipo, Tipo> sustituciones) {
         if (tipo == null)
             return null;
         if (tipo instanceof TipoPrimitivo)
@@ -87,10 +106,25 @@ public class EntradaAtributo {
         if (tipo instanceof TipoArreglo)
             return new TipoArreglo(tipo.getToken(), copiarTipo(((TipoArreglo) tipo).getTipoElemento(), sustituciones));
         TipoReferencia referencia = (TipoReferencia) tipo;
-        Tipo sustituto = sustituciones.get(referencia.getNombreClase());
-        if (sustituto != null)
+        Tipo sustituto = referencia.getParametroTipo() == null
+                ? null : sustituciones.get(referencia.getParametroTipo());
+        if (sustituto != null && !esSustitucionIdentica(referencia, sustituto))
             return copiarTipo(sustituto, sustituciones);
-        return new TipoReferencia(referencia.getToken(), referencia.getNombreClase(),
-            copiarTipo(referencia.getArgumentoGenerico(), sustituciones));
+        if (referencia.getParametroTipo() != null && referencia.getArgumentoGenerico() == null)
+            return new TipoParametro(referencia.getToken(), referencia.getParametroTipo());
+        TipoReferencia copia = new TipoReferencia(referencia.getToken(), referencia.getNombreClase(),
+                copiarTipo(referencia.getArgumentoGenerico(), sustituciones));
+        copia.setParametroTipo(referencia.getParametroTipo());
+        return copia;
+    }
+
+    private boolean esSustitucionIdentica(TipoReferencia referencia, Tipo sustituto) {
+        if (!(sustituto instanceof TipoReferencia))
+            return false;
+        TipoReferencia otra = (TipoReferencia) sustituto;
+        return referencia.getParametroTipo() != null && otra.getParametroTipo() != null
+                ? referencia.getParametroTipo() == otra.getParametroTipo()
+                : referencia.getArgumentoGenerico() == null && otra.getArgumentoGenerico() == null
+                    && referencia.getNombreClase().equals(otra.getNombreClase());
     }
 }

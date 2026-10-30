@@ -8,6 +8,7 @@ import analizadorSemantico.EntradaClase;
 import analizadorSemantico.EntradaMetodo;
 import analizadorSemantico.TablaSimbolos;
 import analizadorSemantico.Tipo;
+import analizadorSemantico.ParametroTipo;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -25,6 +26,8 @@ public final class ContextoSintactico {
     private boolean metodoFinal;
     private String parametroGenericoMetodo;
     private Map<String, List<Tipo>> parametrosGenericosMetodo = new LinkedHashMap<>();
+    private Map<String, ParametroTipo> simbolosParametrosGenericosMetodo = new LinkedHashMap<>();
+    private Object origenParametrosGenericosMetodo = new Object();
 
     public ContextoSintactico(AnalizadorLexico lexer) {
         this(lexer, new TablaSimbolos());
@@ -65,7 +68,29 @@ public final class ContextoSintactico {
     public String getParametroGenericoMetodo() { return parametroGenericoMetodo; }
     public void setParametroGenericoMetodo(String parametroGenericoMetodo) { this.parametroGenericoMetodo = parametroGenericoMetodo; }
     public Map<String, List<Tipo>> getParametrosGenericosMetodo() { return parametrosGenericosMetodo; }
-    public void limpiarParametrosGenericosMetodo() { parametrosGenericosMetodo.clear(); parametroGenericoMetodo = null; }
+    public Map<String, ParametroTipo> getSimbolosParametrosGenericosMetodo() {
+        return simbolosParametrosGenericosMetodo;
+    }
+    public ParametroTipo registrarParametroGenericoMetodo(Token token, List<Tipo> bounds) {
+        ParametroTipo parametro = new ParametroTipo(token, token.getLexema(), origenParametrosGenericosMetodo);
+        parametrosGenericosMetodo.put(token.getLexema(), bounds);
+        simbolosParametrosGenericosMetodo.put(token.getLexema(), parametro);
+        return parametro;
+    }
+    public ParametroTipo buscarParametroTipo(String nombre) {
+        ParametroTipo parametroMetodo = simbolosParametrosGenericosMetodo.get(nombre);
+        if (parametroMetodo != null)
+            return parametroMetodo;
+        EntradaClase clase = claseActual;
+        return clase != null && nombre.equals(clase.getParametroGenerico())
+                ? clase.getSimboloParametroGenerico() : null;
+    }
+    public void limpiarParametrosGenericosMetodo() {
+        parametrosGenericosMetodo.clear();
+        simbolosParametrosGenericosMetodo.clear();
+        parametroGenericoMetodo = null;
+        origenParametrosGenericosMetodo = new Object();
+    }
     public void registrarError(analizadorSemantico.ExcepcionSemantica error) {
         tablaSimbolos.registrarError(error);
     }

@@ -1,5 +1,8 @@
+package test.java;
+
 import java.io.*;
 import java.util.ArrayList;
+import main.Main;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -10,13 +13,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import main.MainSemantico;
-
 @RunWith(Parameterized.class)
 public class TesterDeCasosConErrores {
-    
-    //TODO: el tipo de esta variable init tiene que ser la clase que tiene el main
-    private static final MainSemantico init = null;
     
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;
@@ -60,7 +58,7 @@ public class TesterDeCasosConErrores {
         String testCaseFilePath = testFilesDirectoryPath+name;
         String errorCode = getErrorCode(testCaseFilePath);
         String[] args = {testCaseFilePath};
-        init.main(args);
+        Main.main(args);
 
         if(fullCompilerOuputPrintingInEachTest){
             System.setOut(originalOut);

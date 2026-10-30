@@ -1,8 +1,10 @@
+package minijavaCompiler;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import main.Main;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -11,8 +13,6 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import main.MainSemantico;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -23,9 +23,6 @@ public class TesterDeCasosSinErrores {
     private static final String msgExito = "[SinErrores]";
     private static final String testFilesDirectoryPath = "resources/sinErrores/";
 
-    //TODO: el tipo de esta variable init tiene que ser la clase que tiene el main
-    private static final MainSemantico init = null;
-   
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;
     private boolean fullCompilerOuputPrintingInEachTest = true;
@@ -70,7 +67,7 @@ public class TesterDeCasosSinErrores {
     void probarExito(String name){
             String path = testFilesDirectoryPath+name;
             String[] args = {path};
-            init.main(args);
+            Main.main(args);
 
             if(fullCompilerOuputPrintingInEachTest){
                 System.setOut(originalOut);

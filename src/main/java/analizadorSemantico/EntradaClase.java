@@ -18,6 +18,7 @@ public class EntradaClase {
     private Map<String, EntradaMetodo> metodos;
     private Map<String, EntradaMetodo> constructores;
     private String parametroGenerico;
+    private ParametroTipo simboloParametroGenerico;
     private boolean estaConsolidada;
     private List<TipoReferencia> interfaces;
     private boolean interfaz;
@@ -69,6 +70,7 @@ public class EntradaClase {
             throw new ExcepcionSemantica(atributo.getToken(),
                     "el atributo '" + atributo.getNombre() + "' ya fue declarado en la clase '" + nombre + "'");
         }
+        atributo.setClaseDeclaracion(this);
         atributos.put(atributo.getNombre(), atributo);
     }
 
@@ -81,6 +83,7 @@ public class EntradaClase {
                     "el metodo '" + metodo.getNombre() + "' con aridad "
                             + metodo.getParametros().size() + " ya fue declarado en la clase '" + nombre + "'");
                     }
+        metodo.setClaseDeclaracion(this);
         metodos.put(metodo.getClaveFirma(), metodo);
     }
 
@@ -93,6 +96,7 @@ public class EntradaClase {
                     "el constructor '" + constructor.getNombre() + "' con aridad "
                             + constructor.getParametros().size() + " ya fue declarado en la clase '" + nombre + "'");
                     }
+        constructor.setClaseDeclaracion(this);
         constructores.put(constructor.getClaveConstructor(), constructor);
     }
 
@@ -127,6 +131,18 @@ public class EntradaClase {
 
     public void setParametroGenerico(String parametroGenerico) {
         this.parametroGenerico = parametroGenerico;
+        this.simboloParametroGenerico = parametroGenerico == null ? null
+                : new ParametroTipo(token, parametroGenerico, this);
+    }
+
+    public void setParametroGenerico(String parametroGenerico, Token tokenParametro) {
+        this.parametroGenerico = parametroGenerico;
+        this.simboloParametroGenerico = parametroGenerico == null ? null
+                : new ParametroTipo(tokenParametro, parametroGenerico, this);
+    }
+
+    public ParametroTipo getSimboloParametroGenerico() {
+        return simboloParametroGenerico;
     }
 
     public boolean isEstaConsolidada() {
@@ -179,9 +195,9 @@ public class EntradaClase {
         for (EntradaAtributo atributo : atributos.values())
             atributo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
         for (EntradaMetodo metodo : metodos.values())
-            metodo.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+            metodo.estaBienDeclarado(tablaSimbolos, parametroGenerico, simboloParametroGenerico);
         for (EntradaMetodo constructor : constructores.values())
-            constructor.estaBienDeclarado(tablaSimbolos, parametroGenerico);
+            constructor.estaBienDeclarado(tablaSimbolos, parametroGenerico, simboloParametroGenerico);
     }
 
     private void chequearCircularidad(TablaSimbolos tablaSimbolos, List<String> rutaActual) {
@@ -221,7 +237,7 @@ public class EntradaClase {
                 entradaInterfaz.consolidar(tablaSimbolos);
         }
 
-        Map<String, Tipo> sustituciones = obtenerSustituciones(padre, claseBase);
+        Map<ParametroTipo, Tipo> sustituciones = obtenerSustituciones(padre, claseBase);
         if (padre != null)
             absorberMiembros(padre, sustituciones);
         for (TipoReferencia interfaz : interfaces) {
@@ -245,7 +261,7 @@ public class EntradaClase {
             if (entradaInterfaz == null)
                 continue;
             entradaInterfaz.consolidar(tablaSimbolos);
-            Map<String, Tipo> sustituciones = obtenerSustituciones(entradaInterfaz, referenciaInterfaz);
+            Map<ParametroTipo, Tipo> sustituciones = obtenerSustituciones(entradaInterfaz, referenciaInterfaz);
             for (EntradaMetodo requerido : entradaInterfaz.metodos.values()) {
                 EntradaMetodo implementacion = metodos.get(requerido.getClaveFirma());
                 if (implementacion != null && implementacion.getToken() == requerido.getToken())
@@ -264,7 +280,7 @@ public class EntradaClase {
         }
     }
 
-    private void absorberMiembros(EntradaClase padre, Map<String, Tipo> sustituciones) {
+    private void absorberMiembros(EntradaClase padre, Map<ParametroTipo, Tipo> sustituciones) {
         for (EntradaAtributo atributoPadre : padre.atributos.values()) {
             if (atributos.containsKey(atributoPadre.getNombre()))
                 throw new ExcepcionSemantica(atributos.get(atributoPadre.getNombre()).getToken(),
@@ -303,24 +319,25 @@ public class EntradaClase {
         return 2;
     }
 
-    private Map<String, Tipo> obtenerSustituciones(EntradaClase padre, TipoReferencia relacion) {
-        Map<String, Tipo> sustituciones = new HashMap<>();
+    private Map<ParametroTipo, Tipo> obtenerSustituciones(EntradaClase padre, TipoReferencia relacion) {
+        Map<ParametroTipo, Tipo> sustituciones = new HashMap<>();
         if (padre != null && padre.parametroGenerico != null && relacion != null
                 && relacion.getArgumentoGenerico() != null)
-            sustituciones.put(padre.parametroGenerico, relacion.getArgumentoGenerico());
+            sustituciones.put(padre.simboloParametroGenerico, relacion.getArgumentoGenerico());
         return sustituciones;
     }
 
-    private boolean mismaFirma(EntradaMetodo padre, EntradaMetodo hijo, Map<String, Tipo> sustituciones) {
+    private boolean mismaFirma(EntradaMetodo padre, EntradaMetodo hijo, Map<ParametroTipo, Tipo> sustituciones) {
         if (padre.getParametrosGenericos().size() != hijo.getParametrosGenericos().size())
             return false;
-        Map<String, String> equivalencias = new LinkedHashMap<>();
+        Map<ParametroTipo, ParametroTipo> equivalencias = new LinkedHashMap<>();
         java.util.Iterator<String> nombresPadre = padre.getParametrosGenericos().keySet().iterator();
         java.util.Iterator<String> nombresHijo = hijo.getParametrosGenericos().keySet().iterator();
         while (nombresPadre.hasNext()) {
             String nombrePadre = nombresPadre.next();
             String nombreHijo = nombresHijo.next();
-            equivalencias.put(nombrePadre, nombreHijo);
+            equivalencias.put(padre.getSimbolosParametrosGenericos().get(nombrePadre),
+                    hijo.getSimbolosParametrosGenericos().get(nombreHijo));
             java.util.List<Tipo> boundsPadre = padre.getParametrosGenericos().get(nombrePadre);
             java.util.List<Tipo> boundsHijo = hijo.getParametrosGenericos().get(nombreHijo);
             if (boundsPadre.size() != boundsHijo.size())
@@ -341,8 +358,8 @@ public class EntradaClase {
         return true;
     }
 
-    private static boolean mismoTipo(Tipo primero, Tipo segundo, Map<String, Tipo> sustituciones,
-                              Map<String, String> equivalencias) {
+    private static boolean mismoTipo(Tipo primero, Tipo segundo, Map<ParametroTipo, Tipo> sustituciones,
+                              Map<ParametroTipo, ParametroTipo> equivalencias) {
         if (primero == null || segundo == null)
             return primero == segundo;
         if (primero instanceof TipoArreglo && segundo instanceof TipoArreglo)
@@ -353,13 +370,28 @@ public class EntradaClase {
         if (primero instanceof TipoReferencia && segundo instanceof TipoReferencia) {
             TipoReferencia referenciaPrimera = (TipoReferencia) primero;
             TipoReferencia referenciaSegunda = (TipoReferencia) segundo;
-            String equivalente = equivalencias.get(referenciaPrimera.getNombreClase());
+            if (referenciaPrimera.esParametroTipo()) {
+                Tipo sustituto = sustituciones.get(referenciaPrimera.getParametroTipo());
+                if (sustituto != null)
+                    return mismoTipo(sustituto, segundo, sustituciones, equivalencias);
+            }
+            if (referenciaPrimera.esParametroTipo() || referenciaSegunda.esParametroTipo()) {
+                ParametroTipo equivalente = equivalencias.get(referenciaPrimera.getParametroTipo());
+                if (equivalente != null)
+                    return referenciaSegunda.getParametroTipo() == equivalente
+                            && mismoTipo(referenciaPrimera.getArgumentoGenerico(),
+                                    referenciaSegunda.getArgumentoGenerico(), sustituciones, equivalencias);
+                if (referenciaPrimera.getParametroTipo() != referenciaSegunda.getParametroTipo())
+                    return false;
+            }
+            ParametroTipo equivalente = equivalencias.get(referenciaPrimera.getParametroTipo());
             if (equivalente != null)
-                return equivalente.equals(referenciaSegunda.getNombreClase())
+                return referenciaSegunda.getParametroTipo() == equivalente
                         && mismoTipo(referenciaPrimera.getArgumentoGenerico(),
                                 referenciaSegunda.getArgumentoGenerico(), sustituciones, equivalencias);
-            Tipo sustituto = sustituciones.get(referenciaPrimera.getNombreClase());
-            if (sustituto != null && !esSustitucionIdentica(referenciaPrimera, sustituto))
+            Tipo sustituto = referenciaPrimera.getParametroTipo() == null
+                    ? null : sustituciones.get(referenciaPrimera.getParametroTipo());
+            if (sustituto != null)
                 return mismoTipo(sustituto, segundo, sustituciones, equivalencias);
             return referenciaPrimera.getNombreClase().equals(referenciaSegunda.getNombreClase())
                     && mismoTipo(referenciaPrimera.getArgumentoGenerico(),

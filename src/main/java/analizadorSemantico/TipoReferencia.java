@@ -6,6 +6,7 @@ import java.util.Set;
 public class TipoReferencia extends Tipo {
     private String nombreClase;
     private Tipo argumentoGenerico;
+    private ParametroTipo parametroTipo;
 
     public TipoReferencia(Token token, String nombreClase) {
         super(token);
@@ -33,6 +34,14 @@ public class TipoReferencia extends Tipo {
         this.argumentoGenerico = argumentoGenerico;
     }
 
+    public ParametroTipo getParametroTipo() { return parametroTipo; }
+
+    public void setParametroTipo(ParametroTipo parametroTipo) {
+        this.parametroTipo = parametroTipo;
+    }
+
+    public boolean esParametroTipo() { return parametroTipo != null; }
+
     @Override
     public String getNombre() {
         return nombreClase;
@@ -53,7 +62,7 @@ public class TipoReferencia extends Tipo {
     @Override
     public void estaBienDeclarado(TablaSimbolos tablaSimbolos, Set<String> parametrosGenericos) {
         EntradaClase clase = tablaSimbolos.getClase(nombreClase);
-        if (!parametrosGenericos.contains(nombreClase) && clase == null)
+        if (parametroTipo == null && !parametrosGenericos.contains(nombreClase) && clase == null)
             throw new ExcepcionSemantica(getToken(),
                     "el tipo '" + nombreClase + "' no fue declarado");
         if (argumentoGenerico != null && clase != null && clase.getParametroGenerico() == null)
@@ -65,14 +74,16 @@ public class TipoReferencia extends Tipo {
 
     @Override
     public boolean usaParametroGenerico(String parametroGenerico) {
-        return nombreClase.equals(parametroGenerico)
+        return (parametroTipo == null ? nombreClase.equals(parametroGenerico)
+                    : parametroTipo.getNombre().equals(parametroGenerico))
                 || argumentoGenerico != null && argumentoGenerico.usaParametroGenerico(parametroGenerico);
     }
 
     @Override
     public Token tokenDelParametro(String parametroGenerico) {
-        if (nombreClase.equals(parametroGenerico))
-            return getToken();
+        if (parametroTipo == null ? nombreClase.equals(parametroGenerico)
+                : parametroTipo.getNombre().equals(parametroGenerico))
+            return parametroTipo == null ? getToken() : parametroTipo.getToken();
         return argumentoGenerico == null ? getToken() : argumentoGenerico.tokenDelParametro(parametroGenerico);
     }
 }

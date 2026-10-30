@@ -32,13 +32,8 @@ public class TablaSimbolos {
         string.setClaseBase(tipoReferencia("Object"));
         system.setClaseBase(tipoReferencia("Object"));
 
-        EntradaMetodo debugPrint = new EntradaMetodo(
-                tokenMiembro("debugPrint"),
-                "debugPrint",
-            tipoPrimitivo(TipoPrimitivo.Primitivo.INT),
-                "public",
-            true);
-        object.agregarMetodo(debugPrint);
+        agregarMetodoConParametro(object, "debugPrint", TipoPrimitivo.Primitivo.VOID,
+                "i", TipoPrimitivo.Primitivo.INT);
 
         object.agregarMetodo(new EntradaMetodo(
                 tokenMiembro("toString"),
@@ -190,6 +185,14 @@ public class TablaSimbolos {
         for (EntradaClase clase : new ArrayList<>(clases.values())) {
             try {
                 clase.validarContratosDeInterfaces(this);
+            } catch (ExcepcionSemantica error) {
+                registrarError(error);
+            }
+        }
+
+        if (errores.isEmpty()) {
+            try {
+                new AnalizadorCuerpos(this).analizar();
             } catch (ExcepcionSemantica error) {
                 registrarError(error);
             }

@@ -21,6 +21,7 @@ dependencies {
 }
 
 test {
+    inputs.files(fileTree('resources'))
     testLogging {
         showStandardStreams = true
     }

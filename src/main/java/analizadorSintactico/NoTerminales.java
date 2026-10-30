@@ -6,6 +6,18 @@ import analizadorSemantico.EntradaAtributo;
 import analizadorSemantico.EntradaClase;
 import analizadorSemantico.EntradaMetodo;
 import analizadorSemantico.EntradaParametro;
+import analizadorSemantico.ast.BloqueAst;
+import analizadorSemantico.ast.CicloForAst;
+import analizadorSemantico.ast.ExpresionAst;
+import analizadorSemantico.ast.NodoExpresionAst;
+import analizadorSemantico.ast.NodoSentenciaAst;
+import analizadorSemantico.ast.SentenciaAst;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import static analizadorSintactico.AstNodos.sentencia;
+import static analizadorSintactico.AstNodos.expresion;
 
 final class ListaClases implements NoTerminal {
     public void parse(ContextoSintactico c) {
@@ -102,7 +114,7 @@ final class GenericidadOpcional implements NoTerminal {
                     ? c.match(TokenType.IdentificadorDeParametroDeTipo)
                     : c.match(TokenType.identificadorDeClase);
             if (c.getClaseActual() != null)
-                c.getClaseActual().setParametroGenerico(parametro.getLexema());
+                c.getClaseActual().setParametroGenerico(parametro.getLexema(), parametro);
             c.match(TokenType.greaterThan);
         }
     }
@@ -243,6 +255,7 @@ final class MiembroSinVisibilidad implements NoTerminal {
         do {
             Token parametro = c.match(TokenType.IdentificadorDeParametroDeTipo);
             java.util.List<analizadorSemantico.Tipo> bounds = new java.util.ArrayList<>();
+            c.registrarParametroGenericoMetodo(parametro, bounds);
             if (c.es(TokenType.kw_extends)) {
                 c.match(TokenType.kw_extends);
                 bounds.add(new Tipo().parseTipo(c));
@@ -251,7 +264,6 @@ final class MiembroSinVisibilidad implements NoTerminal {
                     bounds.add(new Tipo().parseTipo(c));
                 }
             }
-            c.getParametrosGenericosMetodo().put(parametro.getLexema(), bounds);
             if (!c.es(TokenType.comma))
                 break;
             c.match(TokenType.comma);
@@ -275,7 +287,8 @@ final class MiembroSinVisibilidad implements NoTerminal {
             c.getVisibilidadActual(), estatico);
         for (java.util.Map.Entry<String, java.util.List<analizadorSemantico.Tipo>> entrada
                 : c.getParametrosGenericosMetodo().entrySet())
-            metodo.agregarParametroGenerico(entrada.getKey(), entrada.getValue());
+            metodo.agregarParametroGenerico(
+                    c.getSimbolosParametrosGenericosMetodo().get(entrada.getKey()), entrada.getValue());
         metodo.setFinalMethod(c.isMetodoFinal());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
@@ -284,7 +297,7 @@ final class MiembroSinVisibilidad implements NoTerminal {
         } catch (analizadorSemantico.ExcepcionSemantica error) {
             c.registrarError(error);
         }
-        new Bloque().parse(c);
+        metodo.setCuerpo(new Bloque().parse(c));
         c.setMetodoActual(null);
         c.limpiarParametrosGenericosMetodo();
     }
@@ -305,7 +318,7 @@ final class MiembroSinVisibilidad implements NoTerminal {
             } catch (analizadorSemantico.ExcepcionSemantica error) {
                 c.registrarError(error);
             }
-            new Bloque().parse(c);
+            constructor.setCuerpo(new Bloque().parse(c));
             c.setMetodoActual(null);
             return;
         }
@@ -331,7 +344,7 @@ final class MiembroSinVisibilidad implements NoTerminal {
         } catch (analizadorSemantico.ExcepcionSemantica error) {
             c.registrarError(error);
         }
-        new Bloque().parse(c);
+        metodo.setCuerpo(new Bloque().parse(c));
         c.setMetodoActual(null);
     }
 }
@@ -376,7 +389,7 @@ final class MetodoInterfaz implements NoTerminal {
         if (c.es(TokenType.lessThan)) {
             c.match(TokenType.lessThan);
             Token parametro = c.match(TokenType.IdentificadorDeParametroDeTipo);
-            c.getParametrosGenericosMetodo().put(parametro.getLexema(), new java.util.ArrayList<>());
+            c.registrarParametroGenericoMetodo(parametro, new java.util.ArrayList<>());
             c.match(TokenType.greaterThan);
         }
         analizadorSemantico.Tipo tipoRetorno = new TipoMetodo().parseTipoMetodo(c);
@@ -384,7 +397,8 @@ final class MetodoInterfaz implements NoTerminal {
         EntradaMetodo metodo = new EntradaMetodo(tokenNombre, tokenNombre.getLexema(), tipoRetorno);
         for (java.util.Map.Entry<String, java.util.List<analizadorSemantico.Tipo>> entrada
                 : c.getParametrosGenericosMetodo().entrySet())
-            metodo.agregarParametroGenerico(entrada.getKey(), entrada.getValue());
+            metodo.agregarParametroGenerico(
+                    c.getSimbolosParametrosGenericosMetodo().get(entrada.getKey()), entrada.getValue());
         c.setMetodoActual(metodo);
         new ArgsFormales().parse(c);
         try {
@@ -433,7 +447,10 @@ final class Tipo implements NoTerminal {
             tipo = agregarArgumentoGenerico(c, (analizadorSemantico.TipoReferencia) tipo);
         } else if (c.es(TokenType.IdentificadorDeParametroDeTipo)) {
             Token tokenTipo = c.match(TokenType.IdentificadorDeParametroDeTipo);
-            tipo = new analizadorSemantico.TipoReferencia(tokenTipo, tokenTipo.getLexema());
+            analizadorSemantico.ParametroTipo parametro = c.buscarParametroTipo(tokenTipo.getLexema());
+            tipo = parametro == null
+                    ? new analizadorSemantico.TipoReferencia(tokenTipo, tokenTipo.getLexema())
+                    : new analizadorSemantico.TipoParametro(tokenTipo, parametro);
         } else {
             throw new ExcepcionSintactica(c.actual(), "tipo");
         }
@@ -468,7 +485,10 @@ final class Tipo implements NoTerminal {
             return tipo;
         }
         Token token = c.match(TokenType.IdentificadorDeParametroDeTipo);
-        return new analizadorSemantico.TipoReferencia(token, token.getLexema());
+        analizadorSemantico.ParametroTipo parametro = c.buscarParametroTipo(token.getLexema());
+        return parametro == null
+                ? new analizadorSemantico.TipoReferencia(token, token.getLexema())
+                : new analizadorSemantico.TipoParametro(token, parametro);
     }
 }
 
@@ -576,71 +596,72 @@ final class ArgFormal implements NoTerminal {
     }
 }
 
-final class Bloque implements NoTerminal {
-    public void parse(ContextoSintactico c) {
-        c.match(TokenType.openBraces);
-        new ListaSentencias().parse(c);
+final class Bloque {
+    public BloqueAst parse(ContextoSintactico c) {
+        Token tokenBloque = c.match(TokenType.openBraces);
+        List<SentenciaAst> sentencias = new ListaSentencias().parse(c);
         c.match(TokenType.closeBraces);
+        return new BloqueAst(tokenBloque, sentencias);
     }
 }
 
-final class ListaSentencias implements NoTerminal {
-    public void parse(ContextoSintactico c) {
+final class ListaSentencias {
+    public List<SentenciaAst> parse(ContextoSintactico c) {
+        List<SentenciaAst> sentencias = new ArrayList<>();
         while (!c.es(TokenType.closeBraces))
-            new Sentencia().parse(c);
+            sentencias.add(new Sentencia().parse(c));
+        return sentencias;
     }
 }
 
-final class Sentencia implements NoTerminal {
-    public void parse(ContextoSintactico c) {
+final class Sentencia {
+    public SentenciaAst parse(ContextoSintactico c) {
         if (c.es(TokenType.semicolon)) {
-            c.match(TokenType.semicolon);
-            return;
+            Token token = c.match(TokenType.semicolon);
+            return sentencia(token, NodoSentenciaAst.Clase.VACIA, null, null,
+                    Collections.emptyList(), Collections.emptyList());
         }
-        if (c.es(TokenType.openBraces)) {
-            new Bloque().parse(c);
-            return;
-        }
-        if (c.es(TokenType.kw_var)) {
-            new VarLocal().parse(c);
-            c.match(TokenType.semicolon);
-            return;
-        }
-        if (c.es(TokenType.kw_return)) {
-            new Return().parse(c);
-            c.match(TokenType.semicolon);
-            return;
-        }
-        if (c.es(TokenType.kw_if)) {
-            new If().parse(c);
-            return;
-        }
-        if (c.es(TokenType.kw_while)) {
-            new While().parse(c);
-            return;
-        }
-        if (c.es(TokenType.kw_for)) {
-            new For().parse(c);
-            return;
-        }
-        new Expresion().parse(c);
+        if (c.es(TokenType.openBraces))
+            return new Bloque().parse(c);
+        if (c.es(TokenType.kw_var))
+            return new VarLocal().parse(c);
+        if (c.es(TokenType.kw_return))
+            return new Return().parse(c);
+        if (c.es(TokenType.kw_if))
+            return new If().parse(c);
+        if (c.es(TokenType.kw_while))
+            return new While().parse(c);
+        if (c.es(TokenType.kw_for))
+            return new For().parse(c);
+        ExpresionAst expresion = new Expresion().parse(c);
         c.match(TokenType.semicolon);
+        return sentencia(expresion.getToken(), NodoSentenciaAst.Clase.EXPRESION, null, null,
+                Collections.singletonList(expresion), Collections.emptyList());
     }
 }
 
-final class VarLocal implements NoTerminal {
-    public void parse(ContextoSintactico c) {
-        c.match(TokenType.kw_var);
-        c.match(TokenType.identificador);
+final class VarLocal {
+    public SentenciaAst parse(ContextoSintactico c) {
+        Token tokenVar = c.match(TokenType.kw_var);
+        Token nombre = c.match(TokenType.identificador);
         c.match(TokenType.assignment);
-        new ExpresionCompuesta().parse(c);
+        ExpresionAst inicializador = new Expresion().parseCompuesta(c);
+        c.match(TokenType.semicolon);
+        return sentencia(tokenVar, NodoSentenciaAst.Clase.VARIABLE_LOCAL, nombre, null,
+                Collections.singletonList(inicializador), Collections.emptyList());
     }
 }
 
-final class Return implements NoTerminal {
-    public void parse(ContextoSintactico c) {
-        c.match(TokenType.kw_return);
-        new ExpresionOpcional().parse(c);
+final class Return {
+    public SentenciaAst parse(ContextoSintactico c) {
+        Token tokenReturn = c.match(TokenType.kw_return);
+        ExpresionAst expresion = null;
+        if (!c.es(TokenType.semicolon))
+            expresion = new Expresion().parse(c);
+        c.match(TokenType.semicolon);
+        return sentencia(tokenReturn, NodoSentenciaAst.Clase.RETURN, null, null,
+                expresion == null ? Collections.emptyList() : Collections.singletonList(expresion),
+                Collections.emptyList());
     }
 }
 
@@ -651,13 +672,67 @@ final class ExpresionOpcional implements NoTerminal {
     }
 }
 
-final class For implements NoTerminal {
-    public void parse(ContextoSintactico c) {
-        c.match(TokenType.kw_for);
+final class For {
+    public SentenciaAst parse(ContextoSintactico c) {
+        Token tokenFor = c.match(TokenType.kw_for);
         c.match(TokenType.openParenthesis);
-        new CabeceraFor().parse(c);
+        if (c.es(TokenType.identificadorDeClase)) {
+            Token inicio = c.match(TokenType.identificadorDeClase);
+            if (c.es(TokenType.period)) {
+                ExpresionAst inicializacion = new Expresion().parseForDesdeClase(c, inicio);
+                return parseClasico(c, tokenFor, inicializacion);
+            }
+            analizadorSemantico.Tipo tipo = parseTipoDesdeClase(c, inicio);
+            Token nombre = c.match(TokenType.identificador);
+            c.match(TokenType.twopoints);
+            ExpresionAst iterable = new Expresion().parse(c);
+            c.match(TokenType.closeParenthesis);
+            SentenciaAst cuerpo = new Sentencia().parse(c);
+            return new CicloForAst(tokenFor, CicloForAst.Forma.MEJORADO, tipo, nombre,
+                    null, null, null, iterable, cuerpo);
+        }
+        if (ContextoSintactico.cualquiera(c, TokenType.kw_boolean, TokenType.kw_char,
+                TokenType.kw_int, TokenType.IdentificadorDeParametroDeTipo)) {
+            analizadorSemantico.Tipo tipo = new Tipo().parseTipo(c);
+            Token nombre = c.match(TokenType.identificador);
+            c.match(TokenType.twopoints);
+            ExpresionAst iterable = new Expresion().parse(c);
+            c.match(TokenType.closeParenthesis);
+            SentenciaAst cuerpo = new Sentencia().parse(c);
+            return new CicloForAst(tokenFor, CicloForAst.Forma.MEJORADO, tipo, nombre,
+                    null, null, null, iterable, cuerpo);
+        }
+        ExpresionAst inicializacion = c.es(TokenType.semicolon) ? null : new Expresion().parse(c);
+        return parseClasico(c, tokenFor, inicializacion);
+    }
+
+    private SentenciaAst parseClasico(ContextoSintactico c, Token tokenFor,
+                                      ExpresionAst inicializacion) {
+        c.match(TokenType.semicolon);
+        ExpresionAst condicion = c.es(TokenType.semicolon) ? null : new Expresion().parse(c);
+        c.match(TokenType.semicolon);
+        ExpresionAst actualizacion = c.es(TokenType.closeParenthesis) ? null : new Expresion().parse(c);
         c.match(TokenType.closeParenthesis);
-        new Sentencia().parse(c);
+        SentenciaAst cuerpo = new Sentencia().parse(c);
+        return new CicloForAst(tokenFor, CicloForAst.Forma.CLASICO, null, null,
+                inicializacion, condicion, actualizacion, null, cuerpo);
+    }
+
+    private analizadorSemantico.Tipo parseTipoDesdeClase(ContextoSintactico c, Token nombreClase) {
+        analizadorSemantico.Tipo argumento = null;
+        if (c.es(TokenType.lessThan)) {
+            c.match(TokenType.lessThan);
+            argumento = new Tipo().parseTipo(c);
+            c.match(TokenType.greaterThan);
+        }
+        analizadorSemantico.Tipo tipo = new analizadorSemantico.TipoReferencia(
+                nombreClase, nombreClase.getLexema(), argumento);
+        while (c.es(TokenType.openSquareBracket)) {
+            Token corchete = c.match(TokenType.openSquareBracket);
+            c.match(TokenType.closeSquareBracket);
+            tipo = new analizadorSemantico.TipoArreglo(corchete, tipo);
+        }
+        return tipo;
     }
 }
 
@@ -797,40 +872,276 @@ final class PrimarioSinIdClase implements NoTerminal {
     }
 }
 
-final class If implements NoTerminal {
-    public void parse(ContextoSintactico c) {
-        c.match(TokenType.kw_if);
+final class If {
+    public SentenciaAst parse(ContextoSintactico c) {
+        Token tokenIf = c.match(TokenType.kw_if);
         c.match(TokenType.openParenthesis);
-        new Expresion().parse(c);
+        ExpresionAst condicion = new Expresion().parse(c);
         c.match(TokenType.closeParenthesis);
-        new Sentencia().parse(c);
-        new If2().parse(c);
+        SentenciaAst ramaIf = new Sentencia().parse(c);
+        SentenciaAst ramaElse = new If2().parse(c);
+        List<SentenciaAst> ramas = ramaElse == null
+                ? Collections.singletonList(ramaIf) : Arrays.asList(ramaIf, ramaElse);
+        return sentencia(tokenIf, NodoSentenciaAst.Clase.IF, null, null,
+                Collections.singletonList(condicion), ramas);
     }
 }
 
-final class If2 implements NoTerminal {
-    public void parse(ContextoSintactico c) {
+final class If2 {
+    public SentenciaAst parse(ContextoSintactico c) {
         if (c.es(TokenType.kw_else)) {
             c.match(TokenType.kw_else);
-            new Sentencia().parse(c);
+            return new Sentencia().parse(c);
+        }
+        return null;
+    }
+}
+
+final class While {
+    public SentenciaAst parse(ContextoSintactico c) {
+        Token tokenWhile = c.match(TokenType.kw_while);
+        c.match(TokenType.openParenthesis);
+        ExpresionAst condicion = new Expresion().parse(c);
+        c.match(TokenType.closeParenthesis);
+        SentenciaAst cuerpo = new Sentencia().parse(c);
+        return sentencia(tokenWhile, NodoSentenciaAst.Clase.WHILE, null, null,
+                Collections.singletonList(condicion), Collections.singletonList(cuerpo));
+    }
+}
+
+final class Expresion {
+    public ExpresionAst parse(ContextoSintactico c) {
+        return parseAsignacion(c);
+    }
+
+    private ExpresionAst parseAsignacion(ContextoSintactico c) {
+        ExpresionAst izquierda = parseCompuesta(c);
+        return parseAsignacionDesde(c, izquierda);
+    }
+
+    private ExpresionAst parseAsignacionDesde(ContextoSintactico c, ExpresionAst izquierda) {
+        if (!c.es(TokenType.assignment))
+            return izquierda;
+        Token operador = c.match(TokenType.assignment);
+        ExpresionAst derecha = parseCompuesta(c);
+        return expresion(operador, NodoExpresionAst.Clase.ASIGNACION, null, null, null,
+                false, Arrays.asList(izquierda, derecha));
+    }
+
+    public ExpresionAst parseCompuesta(ContextoSintactico c) {
+        return parseCompuestaDesde(c, parseUnaria(c));
+    }
+
+    private ExpresionAst parseCompuestaDesde(ContextoSintactico c, ExpresionAst izquierda) {
+        while (esOperadorBinario(c.actual().getTokenType())) {
+            Token operador = c.actual();
+            c.match(operador.getTokenType());
+            ExpresionAst derecha = parseUnaria(c);
+            izquierda = expresion(operador, NodoExpresionAst.Clase.BINARIO, null, null,
+                    operador.getLexema(), false, Arrays.asList(izquierda, derecha));
+        }
+        return izquierda;
+    }
+
+    private boolean esOperadorBinario(TokenType operador) {
+        switch (operador) {
+            case or:
+            case and:
+            case equals:
+            case notEquals:
+            case lessThan:
+            case greaterThan:
+            case lessThanOrEqual:
+            case greaterThanOrEqual:
+            case plus:
+            case minus:
+            case multiply:
+            case operatorSlash:
+            case mod:
+                return true;
+            default:
+                return false;
         }
     }
-}
 
-final class While implements NoTerminal {
-    public void parse(ContextoSintactico c) {
-        c.match(TokenType.kw_while);
-        c.match(TokenType.openParenthesis);
-        new Expresion().parse(c);
-        c.match(TokenType.closeParenthesis);
-        new Sentencia().parse(c);
+    private ExpresionAst parseUnaria(ContextoSintactico c) {
+        if (ContextoSintactico.cualquiera(c, TokenType.plus, TokenType.minus, TokenType.not)) {
+            Token operador = c.actual();
+            c.match(operador.getTokenType());
+            ExpresionAst operando = parsePostfija(c);
+            return expresion(operador, NodoExpresionAst.Clase.UNARIO, null, null,
+                    operador.getLexema(), false, Collections.singletonList(operando));
+        }
+        return parsePostfija(c);
     }
-}
 
-final class Expresion implements NoTerminal {
-    public void parse(ContextoSintactico c) {
-        new ExpresionCompuesta().parse(c);
-        new Expresion2().parse(c);
+    private ExpresionAst parsePostfija(ContextoSintactico c) {
+        return parsePostfijaDesde(c, parsePrimaria(c));
+    }
+
+    private ExpresionAst parsePostfijaDesde(ContextoSintactico c, ExpresionAst expresion) {
+        while (true) {
+            if (c.es(TokenType.period)) {
+                c.match(TokenType.period);
+                Token nombre = c.match(TokenType.identificador);
+                if (c.es(TokenType.openParenthesis)) {
+                    List<ExpresionAst> operandos = new ArrayList<>();
+                    operandos.add(expresion);
+                    operandos.addAll(parseArgumentos(c));
+                    expresion = expresion(nombre, NodoExpresionAst.Clase.LLAMADA_MIEMBRO,
+                            nombre, null, null, false, operandos);
+                } else {
+                    expresion = expresion(nombre, NodoExpresionAst.Clase.ACCESO_ATRIBUTO,
+                            nombre, null, null, false, Collections.singletonList(expresion));
+                }
+            } else if (c.es(TokenType.openSquareBracket)) {
+                Token corchete = c.match(TokenType.openSquareBracket);
+                ExpresionAst indice = parseAsignacion(c);
+                c.match(TokenType.closeSquareBracket);
+                expresion = expresion(corchete, NodoExpresionAst.Clase.ACCESO_INDICE,
+                        null, null, null, false, Arrays.asList(expresion, indice));
+            } else if (ContextoSintactico.cualquiera(c, TokenType.addOne, TokenType.subtractOne)) {
+                Token operador = c.actual();
+                c.match(operador.getTokenType());
+                expresion = expresion(operador, NodoExpresionAst.Clase.INCREMENTO,
+                        null, null, operador.getLexema(), true, Collections.singletonList(expresion));
+            } else {
+                return expresion;
+            }
+        }
+    }
+
+    private ExpresionAst parsePrimaria(ContextoSintactico c) {
+        Token token = c.actual();
+        if (ContextoSintactico.cualquiera(c, TokenType.kw_true, TokenType.kw_false)) {
+            c.match(token.getTokenType());
+            return expresion(token, NodoExpresionAst.Clase.LITERAL_BOOLEAN, null, null,
+                    token.getLexema(), false, Collections.emptyList());
+        }
+        if (c.es(TokenType.intLiteral)) {
+            c.match(TokenType.intLiteral);
+            return expresion(token, NodoExpresionAst.Clase.LITERAL_INT, null, null,
+                    token.getLexema(), false, Collections.emptyList());
+        }
+        if (c.es(TokenType.charLiteral)) {
+            c.match(TokenType.charLiteral);
+            return expresion(token, NodoExpresionAst.Clase.LITERAL_CHAR, null, null,
+                    token.getLexema(), false, Collections.emptyList());
+        }
+        if (c.es(TokenType.stringLiteral)) {
+            c.match(TokenType.stringLiteral);
+            return expresion(token, NodoExpresionAst.Clase.LITERAL_STRING, null, null,
+                    token.getLexema(), false, Collections.emptyList());
+        }
+        if (c.es(TokenType.kw_null)) {
+            c.match(TokenType.kw_null);
+            return expresion(token, NodoExpresionAst.Clase.LITERAL_NULL, null, null,
+                    token.getLexema(), false, Collections.emptyList());
+        }
+        if (c.es(TokenType.kw_this)) {
+            c.match(TokenType.kw_this);
+            return expresion(token, NodoExpresionAst.Clase.THIS, null, null,
+                    null, false, Collections.emptyList());
+        }
+        if (c.es(TokenType.kw_new))
+            return parseNuevo(c);
+        if (c.es(TokenType.identificadorDeClase))
+            return parseLlamadaEstatico(c);
+        if (c.es(TokenType.identificador)) {
+            Token nombre = c.match(TokenType.identificador);
+            if (c.es(TokenType.openParenthesis))
+                return expresion(nombre, NodoExpresionAst.Clase.LLAMADA_IMPLICITA, nombre,
+                        null, null, false, parseArgumentos(c));
+            return expresion(nombre, NodoExpresionAst.Clase.VARIABLE, nombre,
+                    null, null, false, Collections.emptyList());
+        }
+        Token parentesis = c.match(TokenType.openParenthesis);
+        ExpresionAst interior = parseAsignacion(c);
+        c.match(TokenType.closeParenthesis);
+        return expresion(parentesis, NodoExpresionAst.Clase.PARENTESIS, null, null,
+                null, false, Collections.singletonList(interior));
+    }
+
+    private ExpresionAst parseLlamadaEstatico(ContextoSintactico c) {
+        Token clase = c.match(TokenType.identificadorDeClase);
+        return parseLlamadaEstaticoDesde(c, clase);
+    }
+
+    private ExpresionAst parseLlamadaEstaticoDesde(ContextoSintactico c, Token clase) {
+        analizadorSemantico.Tipo tipoClase = new analizadorSemantico.TipoReferencia(clase, clase.getLexema());
+        c.match(TokenType.period);
+        Token metodo = c.match(TokenType.identificador);
+        List<ExpresionAst> argumentos = parseArgumentos(c);
+        return expresion(metodo, NodoExpresionAst.Clase.LLAMADA_ESTATICA, metodo,
+                tipoClase, clase.getLexema(), false, argumentos);
+    }
+
+    public ExpresionAst parseForDesdeClase(ContextoSintactico c, Token clase) {
+        ExpresionAst inicio = parseLlamadaEstaticoDesde(c, clase);
+        inicio = parsePostfijaDesde(c, inicio);
+        inicio = parseCompuestaDesde(c, inicio);
+        return parseAsignacionDesde(c, inicio);
+    }
+
+    private ExpresionAst parseNuevo(ContextoSintactico c) {
+        Token nuevo = c.match(TokenType.kw_new);
+        analizadorSemantico.Tipo base;
+        if (ContextoSintactico.cualquiera(c, TokenType.kw_boolean, TokenType.kw_char, TokenType.kw_int)) {
+            Token primitivo = c.actual();
+            c.match(primitivo.getTokenType());
+            analizadorSemantico.TipoPrimitivo.Primitivo valor = primitivo.getTokenType() == TokenType.kw_boolean
+                    ? analizadorSemantico.TipoPrimitivo.Primitivo.BOOLEAN
+                    : primitivo.getTokenType() == TokenType.kw_char
+                        ? analizadorSemantico.TipoPrimitivo.Primitivo.CHAR
+                        : analizadorSemantico.TipoPrimitivo.Primitivo.INT;
+            base = new analizadorSemantico.TipoPrimitivo(primitivo, valor);
+        } else {
+            Token nombre = c.actual();
+            if (c.es(TokenType.identificadorDeClase)) {
+                c.match(TokenType.identificadorDeClase);
+                analizadorSemantico.Tipo argumento = null;
+                if (c.es(TokenType.lessThan)) {
+                    c.match(TokenType.lessThan);
+                    argumento = new Tipo().parseTipo(c);
+                    c.match(TokenType.greaterThan);
+                }
+                base = new analizadorSemantico.TipoReferencia(nombre, nombre.getLexema(), argumento);
+            } else {
+                c.match(TokenType.IdentificadorDeParametroDeTipo);
+                analizadorSemantico.ParametroTipo parametro = c.buscarParametroTipo(nombre.getLexema());
+                base = parametro == null
+                        ? new analizadorSemantico.TipoReferencia(nombre, nombre.getLexema())
+                        : new analizadorSemantico.TipoParametro(nombre, parametro);
+            }
+        }
+        if (c.es(TokenType.openParenthesis)) {
+            List<ExpresionAst> argumentos = parseArgumentos(c);
+            return expresion(nuevo, NodoExpresionAst.Clase.NUEVO_OBJETO, base.getToken(), base,
+                    null, false, argumentos);
+        }
+        List<ExpresionAst> tamanios = new ArrayList<>();
+        do {
+            Token corchete = c.match(TokenType.openSquareBracket);
+            tamanios.add(parseAsignacion(c));
+            c.match(TokenType.closeSquareBracket);
+            base = new analizadorSemantico.TipoArreglo(corchete, base);
+        } while (c.es(TokenType.openSquareBracket));
+        return expresion(nuevo, NodoExpresionAst.Clase.NUEVO_ARREGLO, base.getToken(), base,
+                null, false, tamanios);
+    }
+
+    private List<ExpresionAst> parseArgumentos(ContextoSintactico c) {
+        c.match(TokenType.openParenthesis);
+        List<ExpresionAst> argumentos = new ArrayList<>();
+        if (!c.es(TokenType.closeParenthesis)) {
+            argumentos.add(parseAsignacion(c));
+            while (c.es(TokenType.comma)) {
+                c.match(TokenType.comma);
+                argumentos.add(parseAsignacion(c));
+            }
+        }
+        c.match(TokenType.closeParenthesis);
+        return argumentos;
     }
 }
 
@@ -1104,5 +1415,21 @@ final class AccesoArreglo implements NoTerminal {
         c.match(TokenType.openSquareBracket);
         new Expresion().parse(c);
         c.match(TokenType.closeSquareBracket);
+    }
+}
+
+final class AstNodos {
+    private AstNodos() {}
+
+    static NodoSentenciaAst sentencia(Token token, NodoSentenciaAst.Clase clase, Token nombre,
+                                      analizadorSemantico.Tipo tipo, List<ExpresionAst> expresiones,
+                                      List<SentenciaAst> sentencias) {
+        return new NodoSentenciaAst(token, clase, nombre, tipo, expresiones, sentencias);
+    }
+
+    static NodoExpresionAst expresion(Token token, NodoExpresionAst.Clase clase, Token nombre,
+                                      analizadorSemantico.Tipo tipo, String valor, boolean postfix,
+                                      List<ExpresionAst> operandos) {
+        return new NodoExpresionAst(token, clase, nombre, tipo, valor, postfix, operandos);
     }
 }
