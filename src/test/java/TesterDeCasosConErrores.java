@@ -49,7 +49,7 @@ public class TesterDeCasosConErrores {
     }
        
         
-    @Test
+    @Test(timeout = 15000)
     public void test1() {
         probarFallo(input);
     }

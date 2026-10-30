@@ -58,7 +58,7 @@ public class TesterDeCasosSinErrores {
 
        
         
-    @Test
+    @Test(timeout = 15000)
     public void testIterado() {
         probarExito(input);
     }
