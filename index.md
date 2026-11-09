@@ -33,10 +33,10 @@ build/libs/Compilador_2026.jar
 
 ## Ejecutar el compilador
 
-El programa recibe como único argumento la ruta del archivo fuente Mini-Java:
+El programa toma la ruta del archivo fuente Mini-Java del primer argumento. La forma de uso es pasar esa ruta como único argumento:
 
 ```bash
-java -jar build/libs/Compilador_2026.jar resources/sinErrores/semICorrecto01.java
+java -jar build/libs/Compilador_2026.jar resources/sinErrores/semIICorrecto01.java
 ```
 
 La entrada configurada en el JAR es `main.Main`, que ejecuta el análisis léxico, sintáctico y semántico.
@@ -50,7 +50,7 @@ Salida exitosa:
 Ejemplo con errores:
 
 ```bash
-java -jar build/libs/Compilador_2026.jar resources/conErrores/semIError01.java
+java -jar build/libs/Compilador_2026.jar resources/conErrores/semIIError01.java
 ```
 
 ## Ejecutar desde Gradle
@@ -59,13 +59,13 @@ También puede ejecutarse directamente con las clases compiladas:
 
 ```bash
 ./gradlew classes
-java -cp build/classes/java/main main.Main resources/sinErrores/semICorrecto01.java
+java -cp build/classes/java/main main.Main resources/sinErrores/semIICorrecto01.java
 ```
 
 Para usar explícitamente el driver semántico:
 
 ```bash
-java -cp build/classes/java/main main.MainSemantico resources/sinErrores/semICorrecto01.java
+java -cp build/classes/java/main main.MainSemantico resources/sinErrores/semIICorrecto01.java
 ```
 
 ## Ejecutar las pruebas
