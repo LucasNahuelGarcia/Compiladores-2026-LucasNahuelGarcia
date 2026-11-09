@@ -169,7 +169,6 @@ final class AnalizadorCuerpos {
                 EntradaAtributo attr = c.getAtributos().get(n.getNombre().getLexema());
                 if (attr == null) error(n.getNombre(), "el atributo no fue declarado");
                 if (attr.getVisibilidad().equals("private") && attr.getClaseDeclaracion() != contexto.getClaseActual()) error(n.getNombre(), "el atributo no es accesible");
-                if (contexto.esEstatico() && attr.getClaseDeclaracion() == contexto.getClaseActual() && !attr.isEstatico()) error(n.getNombre(), "un atributo de instancia no puede usarse en un contexto estatico");
                 n.vincularEntidad(attr.getDeclaracionOriginal());
                 t = TipoVistas.vista(attr.getDeclaracionOriginal().getTipo(), receptor, attr.getClaseDeclaracion(), tabla);
                 e.setAsignable(!tieneBaseParentizada(a.get(0))); break;
