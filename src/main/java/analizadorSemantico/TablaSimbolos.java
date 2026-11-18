@@ -208,18 +208,11 @@ public class TablaSimbolos {
 
     private void inyectarConstructoresPorDefecto() {
         for (EntradaClase clase : clases.values()) {
-            if (!clase.isInterfaz() && !esClasePredefinida(clase)
-                    && clase.getConstructores().isEmpty()) {
+            if (!clase.isInterfaz() && clase.getConstructores().isEmpty()) {
                 clase.agregarConstructor(new EntradaMetodo(
                         clase.getToken(), clase.getNombre(), null, "public", false));
             }
         }
-    }
-
-    private boolean esClasePredefinida(EntradaClase clase) {
-        return clase.getNombre().equals("Object")
-                || clase.getNombre().equals("String")
-                || clase.getNombre().equals("System");
     }
 
     public void consolidar() {

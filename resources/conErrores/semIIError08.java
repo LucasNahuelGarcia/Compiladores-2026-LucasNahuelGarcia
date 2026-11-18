@@ -1,4 +1,4 @@
-///[Error:new|5]
+///[Error:T|3]
 // Un parametro generico de clase no puede usarse en un cuerpo estatico.
 class Caja<T> {
     static void crear() {

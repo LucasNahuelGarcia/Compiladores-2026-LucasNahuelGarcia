@@ -340,7 +340,8 @@ final class AnalizadorCuerpos {
     private boolean esDeclaracionLocalDirecta(SentenciaAst s) { return s instanceof NodoSentenciaAst && ((NodoSentenciaAst)s).getClase()==NodoSentenciaAst.Clase.VARIABLE_LOCAL; }
     private void validarTipoEscrito(Tipo t, Token token) {
         if (contexto.esEstatico() && contieneParametro(t, contexto.getClaseActual().getSimboloParametroGenerico()))
-            error(token, "el parametro generico de clase no puede usarse en un contexto estatico");
+            error(t.tokenDelParametro(contexto.getClaseActual().getParametroGenerico()),
+                    "el parametro generico de clase no puede usarse en un contexto estatico");
         t.estaBienDeclarado(tabla, contexto.getClaseActual().getParametroGenerico());
         validarArgumentosGenericos(t, token);
     }

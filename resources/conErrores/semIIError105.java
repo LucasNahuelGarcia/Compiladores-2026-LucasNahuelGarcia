@@ -1,4 +1,4 @@
-///[Error:new|3]
+///[Error:T|2]
 class EstaticaGen<T> {
     static void test() { var a = new EstaticaGen<T>(); }
 }

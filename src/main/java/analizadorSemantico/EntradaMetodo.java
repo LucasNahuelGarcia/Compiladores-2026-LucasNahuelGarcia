@@ -183,18 +183,18 @@ public class EntradaMetodo implements EntidadDeclarativa {
         for (List<Tipo> bounds : parametrosGenericos.values())
             for (Tipo bound : bounds) {
                 if (estatico && contieneParametro(bound, simboloParametroGenerico))
-                    throw new ExcepcionSemantica(bound.getToken(),
+                    throw new ExcepcionSemantica(bound.tokenDelParametro(parametroGenerico),
                             "el parametro generico de clase no puede usarse en un metodo estatico");
                 bound.estaBienDeclarado(tablaSimbolos, alcance);
             }
         if (estatico && contieneParametro(tipoRetorno, simboloParametroGenerico))
-            throw new ExcepcionSemantica(tipoRetorno.getToken(),
+            throw new ExcepcionSemantica(tipoRetorno.tokenDelParametro(parametroGenerico),
                     "el parametro generico de clase no puede usarse en un metodo estatico");
         if (tipoRetorno != null)
             tipoRetorno.estaBienDeclarado(tablaSimbolos, alcance);
         for (EntradaParametro parametro : parametros.values()) {
             if (estatico && contieneParametro(parametro.getTipo(), simboloParametroGenerico))
-                throw new ExcepcionSemantica(parametro.getTipo().getToken(),
+                throw new ExcepcionSemantica(parametro.getTipo().tokenDelParametro(parametroGenerico),
                         "el parametro generico de clase no puede usarse en un metodo estatico");
             parametro.getTipo().estaBienDeclarado(tablaSimbolos, alcance);
         }
